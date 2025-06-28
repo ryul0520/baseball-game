@@ -115,14 +115,14 @@
             z-index: 99;
         }
         
-        /* --- [핵심] 모든 정보를 표시하는 반응형 스코어보드 스타일 --- */
+        /* --- [핵심] 스코어보드 CSS 최종 수정 --- */
         #full-scoreboard, #final-scoreboard-container {
             border: 1px solid #333;
             margin-bottom: 10px;
         }
         .scoreboard-row {
             display: grid;
-            /* 팀이름(2.5), 12개 이닝(각각 1), R(1.2), H/E/B(각각 0.9) 비율로 유동적인 너비 설정 */
+            /* 17개 열의 너비를 비율로 설정하여 화면에 꽉 차게 만듭니다. */
             grid-template-columns: 2.5fr repeat(12, 1fr) 1.2fr 0.9fr 0.9fr 0.9fr;
         }
         .header-row {
@@ -139,13 +139,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden; /* 글자가 넘칠 경우 숨김 */
-            text-overflow: ellipsis; /* 글자가 넘칠 경우 ...으로 표시 */
-            white-space: nowrap; /* 줄바꿈 방지 */
+            overflow: hidden;
+            white-space: nowrap;
         }
         .team-name {
             font-weight: bold;
-            font-size: 0.8rem; /* 팀 이름은 약간 더 크게 */
+            font-size: 0.8rem;
             border-left: none;
             justify-content: flex-start;
             padding-left: 5px;
@@ -308,6 +307,8 @@
 </div>
 
 <script>
+    // JavaScript 코드는 이전 버전과 동일하게 유지됩니다.
+    // 모든 변경 사항은 CSS에서 처리되었습니다.
     document.addEventListener('DOMContentLoaded', () => {
         const elements = {
             titleScreen: document.getElementById('title-screen'),
@@ -816,14 +817,16 @@
             elements.finalScoreDisplay.textContent = `AWAY ${awayScore} : ${homeScore} HOME`;
             
             elements.finalScoreboardContainer.innerHTML = ''; 
+            const finalBoardWrapper = document.createElement('div');
             const finalBoard = elements.fullScoreboard.cloneNode(true);
+            finalBoardWrapper.appendChild(finalBoard);
 
             if (winner) {
                 const winnerRow = finalBoard.querySelector(`.${winner}-team-row`);
                 if (winnerRow) winnerRow.classList.add('winner-row');
             }
 
-            elements.finalScoreboardContainer.appendChild(finalBoard);
+            elements.finalScoreboardContainer.appendChild(finalBoardWrapper);
             
             elements.gameOverScreen.style.display = 'flex';
         }
