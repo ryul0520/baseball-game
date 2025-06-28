@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- [핵심 추가] 반응형 디자인을 위한 뷰포트 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Baseball Simulator</title>
     <style>
@@ -38,6 +39,7 @@
         }
         .scoreboard-row {
             display: grid;
+            /* 12이닝 + R,H,E,B = 17개 열 */
             grid-template-columns: 4fr repeat(12, 1fr) 2fr 2fr 2fr 2fr;
         }
         .header-row {
@@ -51,6 +53,8 @@
             border-top: 1px solid #ccc;
             font-size: 0.8rem;
             text-align: center;
+            /* 기본적으로 모든 이닝 열을 보여줌 */
+            display: block;
         }
         .team-name {
             font-weight: bold;
@@ -182,6 +186,31 @@
             75% { opacity: 1; }
             100% { opacity: 0; }
         }
+
+        /* [핵심 추가] 모바일 화면을 위한 미디어 쿼리 */
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 10px;
+            }
+            .scoreboard-row {
+                /* 팀 이름, 1-6이닝, R,H,E,B = 11개 열 */
+                grid-template-columns: 3fr repeat(6, 1fr) 1.5fr 1.5fr 1.5fr 1.5fr;
+            }
+            .cell {
+                font-size: 0.7rem; /* 글꼴 크기 축소 */
+                padding: 3px 1px;
+            }
+            /* 7~12 이닝에 해당하는 열 숨기기 */
+            .scoreboard-row .cell:nth-child(n+8):nth-child(-n+13) {
+                display: none;
+            }
+            #pitch-result {
+                font-size: 1.2rem;
+            }
+            #pitch-info {
+                font-size: 0.8rem;
+            }
+        }
     </style>
     <style id="pitch-animation-style"></style>
 </head>
@@ -193,8 +222,12 @@
         <div id="full-scoreboard">
             <div class="scoreboard-row header-row">
                 <div class="cell team-name">TEAM</div>
-                <div class="cell">1</div><div class="cell">2</div><div class="cell">3</div><div class="cell">4</div><div class="cell">5</div><div class="cell">6</div><div class="cell">7</div><div class="cell">8</div><div class="cell">9</div><div class="cell">10</div><div class="cell">11</div><div class="cell">12</div>
-                <div class="cell stat-r">R</div><div class="cell stat-h">H</div><div class="cell stat-e">E</div><div class="cell stat-b">B</div>
+                <div class="cell">1</div><div class="cell">2</div><div class="cell">3</div>
+                <div class="cell">4</div><div class="cell">5</div><div class="cell">6</div>
+                <div class="cell">7</div><div class="cell">8</div><div class="cell">9</div>
+                <div class="cell">10</div><div class="cell">11</div><div class="cell">12</div>
+                <div class="cell stat-r">R</div><div class="cell stat-h">H</div><div class="cell stat-e">E</div>
+                <div class="cell stat-b">B</div>
             </div>
             <div class="scoreboard-row" id="away-row"></div>
             <div class="scoreboard-row" id="home-row"></div>
@@ -393,7 +426,6 @@
                 resetBallPosition();
                 elements.strikeZone.style.opacity = '0';
                 
-                // [핵심 수정] 투구 시작 대기 시간을 1초로 변경
                 setTimeout(() => {
                     const pitchData = decidePitchPath();
                     const animationDuration = calculateAnimationDuration(pitchData.speed);
