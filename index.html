@@ -498,7 +498,6 @@
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
 
-        // [변경] AI 타격 능력 소폭 상향 조정
         const AI_BATTING_SETTINGS = {
             swingChanceStrike: 0.90,
             swingChanceBall: 0.15,
@@ -741,7 +740,6 @@
             setTimeout(callback, battedAnim.duration * 1000);
         }
         
-        // [변경] handlePitchResult에 땅볼 처리 로직 추가
         function handlePitchResult(result, pitchTypeInfo, speed) {
             if (!isGameActive && !isTutorialActive) return false;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
@@ -787,14 +785,18 @@
                     atBatEnded = false;
                     break;
                 case 'OUT':
-                    // 땅볼 아웃일 때만 특별 로직 적용
-                    if (result.subType === 'GROUND') {
+                    // [수정] 희생플라이 로직 추가
+                    // 조건: 뜬공 아웃, 2아웃 미만, 3루 주자 존재
+                    if (result.subType === 'FLY' && gameState.bso.o < 2 && gameState.runners[2]) {
+                        displayText = 'SACRIFICE FLY';
+                        gameState.bso.o++;
+                        handleAdvancement({ isSacFly: true }); // 희생 플라이 전용 진루 처리
+                    } else if (result.subType === 'GROUND') {
                         const groundOutResult = handleGroundOut();
                         displayText = groundOutResult.displayText;
-                    } else { // 뜬공, 라인드라이브 아웃
+                    } else { 
                         displayText = result.subType === 'FLY' ? 'FLY OUT' : 'LINE DRIVE OUT';
                         gameState.bso.o++;
-                        // 뜬공/라인드라이브는 주자 진루 없음
                         handleAdvancement({ bases: 0 });
                     }
                     resetBSCount();
@@ -929,18 +931,24 @@
             
             const homeScore = gameState.teams.home.R;
             const awayScore = gameState.teams.away.R;
-            
-            if ( (gameState.inning >= gameState.regularInnings && gameState.half === 'Bot') ||
-                 (gameState.inning > gameState.regularInnings && gameState.half === 'Top' && homeScore !== awayScore) || 
-                 (gameState.inning > gameState.maxInnings) ) {
-                endGame();
-                return;
+
+            if (gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings) {
+                if (homeScore !== awayScore || gameState.inning >= gameState.maxInnings) {
+                    endGame();
+                    return;
+                }
             }
 
             gameState.bso = { b: 0, s: 0, o: 0 };
             gameState.runners = [false, false, false];
             
             if (gameState.half === 'Top') {
+                // [수정] 9회말(정규 마지막 이닝 말) 공격을 할 필요가 없는 경우 게임 종료
+                // 조건: 정규 마지막 이닝 이상, 초 공격 종료 후, 홈팀이 이기고 있을 때
+                if (gameState.inning >= gameState.regularInnings && homeScore > awayScore) {
+                    endGame();
+                    return;
+                }
                 gameState.half = 'Bot';
             } else {
                 gameState.half = 'Top';
@@ -949,6 +957,12 @@
             
             updateUI();
             
+            // [수정] 12회가 넘어가면 무승부로 종료
+            if (gameState.inning > gameState.maxInnings) {
+                endGame();
+                return;
+            }
+
             setTimeout(() => {
                 if (isGameActive) startGameTurn();
             }, 1500);
@@ -1041,8 +1055,8 @@
             effectEl.classList.add('score-anim');
         }
         
-        // [변경] 주자 진루 로직 전체 수정
-        function handleAdvancement({ bases = 0, isWalk = false, groundOutResult = null }) {
+        // [수정] isSacFly 파라미터 추가
+        function handleAdvancement({ bases = 0, isWalk = false, groundOutResult = null, isSacFly = false }) {
             if (!isGameActive && !isTutorialActive) return;
 
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
@@ -1050,42 +1064,34 @@
             const originalRunners = [...gameState.runners];
             const newRunners = [false, false, false];
 
-            if (groundOutResult) { // 땅볼 아웃 처리
+            if (isSacFly) { // [추가] 희생 플라이 진루 처리
+                runsScored++;
+                // 1루, 2루 주자는 그대로 유지
+                newRunners[0] = originalRunners[0];
+                newRunners[1] = originalRunners[1];
+            } else if (groundOutResult) { 
                 if (groundOutResult.isDoublePlay) {
-                    // 병살: 3루 주자는 남음
                     if (originalRunners[2]) newRunners[2] = true;
-                } else { // 병살 아님 (야수 선택 또는 일반 땅볼아웃)
-                    // 타자주자 1루에 진루
+                } else { 
                     newRunners[0] = true;
-                    // 2루 주자는 3루로
                     if (originalRunners[1]) newRunners[2] = true;
-                    // 3루 주자는 홈인
                     if (originalRunners[2]) runsScored++;
                 }
-            } else if (isWalk) { // 볼넷 처리
-                // 1, 2, 3루 주자가 모두 있었다면 3루 주자 득점
+            } else if (isWalk) {
                 if (originalRunners[0] && originalRunners[1] && originalRunners[2]) runsScored++;
-                // 1, 2루 주자가 있었다면 3루로 진루
                 if (originalRunners[0] && originalRunners[1]) newRunners[2] = true;
-                // 1루 주자가 있었다면 2루로 진루
                 if (originalRunners[0]) newRunners[1] = true;
-                // 3루 주자는 원래 자리에, 2루 주자는 3루에
                 if(originalRunners[2] && !newRunners[2]) newRunners[2] = true;
                 if(originalRunners[1] && !newRunners[1]) newRunners[1] = true;
-                // 타자 주자 1루로
                 newRunners[0] = true;
-            } else { // 안타 처리
-                // 3루 주자
+            } else { 
                 if (originalRunners[2]) runsScored++;
-                // 2루 주자
                 if (originalRunners[1]) {
-                    (2 + bases >= 3) ? runsScored++ : newRunners[1 + bases] = true;
+                    (2 + bases >= 4) ? runsScored++ : newRunners[1 + bases] = true;
                 }
-                // 1루 주자
                 if (originalRunners[0]) {
-                    (1 + bases >= 3) ? runsScored++ : newRunners[0 + bases] = true;
+                    (1 + bases >= 4) ? runsScored++ : newRunners[0 + bases] = true;
                 }
-                // 타자 주자
                 if (bases >= 4) { runsScored++; }
                 else if (bases > 0) { newRunners[bases - 1] = true; }
             }
@@ -1100,13 +1106,13 @@
                 gameState.teams[currentTeam].inningScores[currentInning] += runsScored;
                 showScoreEffect(runsScored);
             }
-
+            
+            // [수정] 끝내기 승리(Walk-off) 조건 확인: 득점 후 즉시 게임 종료
             if (isGameActive && gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings && gameState.teams.home.R > gameState.teams.away.R) {
                 setTimeout(() => { if (isGameActive) endGame(); }, 500);
             }
         }
         
-        // [추가] 땅볼 아웃 처리 전용 함수
         function handleGroundOut() {
             const runnerOnFirst = gameState.runners[0];
             const outs = gameState.bso.o;
@@ -1114,17 +1120,15 @@
             let displayText = 'GROUND OUT';
 
             if (runnerOnFirst && outs < 2) {
-                // 병살 시도
-                if (Math.random() < 0.55) { // 55% 확률로 병살
+                if (Math.random() < 0.55) { 
                     isDoublePlay = true;
                     gameState.bso.o += 2;
                     displayText = 'DOUBLE PLAY!';
-                } else { // 병살 실패 (야수 선택)
+                } else { 
                     gameState.bso.o++;
                     displayText = "FIELDER'S CHOICE";
                 }
             } else {
-                // 병살 상황 아님
                 gameState.bso.o++;
             }
             
