@@ -89,16 +89,26 @@
             flex-direction: column;
             gap: 15px;
         }
-        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button {
+        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button {
              padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
             color: #000; background-color: #fff; border: 2px solid #000;
             border-radius: 5px; cursor: pointer; transition: all 0.3s;
             width: 250px;
         }
-        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover {
+        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover {
             background-color: #000;
             color: #fff;
         }
+        #tutorial-button {
+            margin-bottom: 20px;
+            background-color: #f1c40f;
+            border-color: #f39c12;
+        }
+        #tutorial-button:hover {
+             background-color: #f39c12;
+             color: #fff;
+        }
+
         #initial-playball-button {
             font-size: 2.5rem; padding: 20px 60px; width: auto;
             border: 3px solid #fff; background-color: rgba(0,0,0,0.5);
@@ -267,6 +277,43 @@
             padding: 20px 40px; font-size: 2rem; font-weight: bold;
             border-radius: 5px; border: 2px solid #000;
         }
+        .tutorial-mode #full-scoreboard,
+        .tutorial-mode .bso-board,
+        .tutorial-mode #bases-diagram,
+        .tutorial-mode .controls {
+            display: none;
+        }
+        #tutorial-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.75);
+            z-index: 120;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #tutorial-message {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+        #tutorial-next-button {
+             padding: 12px 35px; font-size: 1.2rem; font-weight: bold;
+            color: #000; background-color: #f1c40f; border: 2px solid #f39c12;
+            border-radius: 5px; cursor: pointer; transition: all 0.3s;
+        }
+        #tutorial-next-button:hover {
+            background-color: #f39c12; color: #fff;
+        }
         
         @keyframes fadeOverlay {
             0% { opacity: 0; } 25% { opacity: 1; }
@@ -283,6 +330,7 @@
     <div id="difficulty-screen">
         <h1 id="difficulty-title">SELECT DIFFICULTY</h1>
         <div id="difficulty-buttons">
+            <button id="tutorial-button">TUTORIAL</button>
             <button class="difficulty-button" data-difficulty="easy">EASY</button>
             <button class="difficulty-button" data-difficulty="normal">NORMAL</button>
             <button class="difficulty-button" data-difficulty="hard">HARD</button>
@@ -311,6 +359,10 @@
 <div class="game-container">
     <div id="turn-overlay" style="display: none;">
         <div id="turn-message"></div>
+    </div>
+    <div id="tutorial-overlay">
+        <div id="tutorial-message"></div>
+        <button id="tutorial-next-button">NEXT</button>
     </div>
     <div id="full-scoreboard">
     </div>
@@ -353,6 +405,10 @@
             difficultyButtons: document.querySelectorAll('.difficulty-button'),
             inningSelectionScreen: document.getElementById('inning-selection-screen'),
             inningButtons: document.querySelectorAll('.inning-button'),
+            tutorialButton: document.getElementById('tutorial-button'),
+            tutorialOverlay: document.getElementById('tutorial-overlay'),
+            tutorialMessage: document.getElementById('tutorial-message'),
+            tutorialNextButton: document.getElementById('tutorial-next-button'),
             gameOverScreen: document.getElementById('game-over-screen'),
             gameResultTitle: document.getElementById('game-result-title'),
             finalScoreDisplay: document.getElementById('final-score-display'),
@@ -393,6 +449,7 @@
 
         let gameState = getInitialGameState();
         let isGameActive = false;
+        let isTutorialActive = false;
 
         const BALL_DIAMETER = 4.5;
         const FINAL_SCALE = 3.5;
@@ -648,7 +705,7 @@
         }
         
         function handlePitchResult(result, pitchTypeInfo, speed) {
-            if (!isGameActive) return false;
+            if (!isGameActive && !isTutorialActive) return false;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
             let displayText = '';
             let atBatEnded = false;
@@ -696,7 +753,7 @@
                         if (Math.random() < 0.6) {
                             displayText = 'DOUBLE PLAY!';
                             gameState.bso.o += 2;
-                            handleAdvancement(0, false, true); // 병살 처리
+                            handleAdvancement(0, false, true);
                         } else {
                             displayText = 'GROUND OUT';
                             gameState.bso.o++;
@@ -720,7 +777,7 @@
             }
             
             elements.pitchResult.textContent = displayText;
-            updateUI();
+            if (!isTutorialActive) updateUI();
             
             return atBatEnded;
         }
@@ -805,7 +862,6 @@
             }
         }
         
-        // --- [핵심] 연장전 게임 종료 로직 수정 ---
         function changeInning() {
             if (!isGameActive) return;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
@@ -817,15 +873,8 @@
             const homeScore = gameState.teams.home.R;
             const awayScore = gameState.teams.away.R;
             
-            // 정규 이닝이 끝났고, 현재 공격이 끝난 상태(초 -> 말 넘어갈 때)
-            if (gameState.inning >= gameState.regularInnings && gameState.half === 'Top') {
-                 if (homeScore !== awayScore) { // 동점이 아니면 즉시 종료
-                    endGame();
-                    return;
-                }
-            }
-             // 최대 연장 이닝 종료
-            if (gameState.inning > gameState.maxInnings) {
+            if ( (gameState.inning > gameState.regularInnings && gameState.half === 'Top' && homeScore !== awayScore) || 
+                 (gameState.inning > gameState.maxInnings) ) {
                 endGame();
                 return;
             }
@@ -913,7 +962,6 @@
             elements.difficultyScreen.style.display = 'none';
             elements.inningSelectionScreen.style.display = 'none';
             elements.gameContainer.style.display = 'none';
-            
             elements.playballOverlay.style.display = 'none';
             
             elements.pitchButton.style.display = 'none';
@@ -933,17 +981,15 @@
             effectEl.classList.add('score-anim');
         }
         
-        // --- [핵심] 병살타 로직 추가 ---
         function handleAdvancement(basesToAdvance, isWalk = false, isDoublePlay = false) {
             if (!isGameActive) return;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
             let runsScored = 0;
             const newRunners = [false, false, false];
-
+            
             if (isDoublePlay) {
-                if(gameState.runners[2]) newRunners[2] = true; // 3루 주자는 유지
-                if(gameState.runners[1]) newRunners[1] = true; // 2루 주자도 유지
-                // 1루 주자와 타자 주자는 아웃
+                if(gameState.runners[2]) newRunners[2] = true; 
+                if(gameState.runners[1]) newRunners[1] = true;
             } else if (isWalk) {
                  if (gameState.runners[0] && gameState.runners[1]) {
                     if(gameState.runners[2]) runsScored++; 
@@ -1148,10 +1194,108 @@
             });
             
             elements.playAgainButton.addEventListener('click', resetGame);
-
+            
+            elements.tutorialButton.addEventListener('click', () => {
+                elements.difficultyScreen.style.animation = 'fadeOutScreen 0.5s forwards';
+                setTimeout(() => {
+                    elements.difficultyScreen.style.display = 'none';
+                    elements.difficultyScreen.style.animation = '';
+                    startTutorial();
+                }, 500);
+            });
+            
             updateUI();
         }
         init();
+
+        // --- 튜토리얼 관련 함수 ---
+        let tutorialPitchCount = 0;
+        const totalTutorialPitches = 5;
+        const tutorialMessages = [
+            "Welcome to the Batting Tutorial!\nLet's learn how to hit.",
+            "A pitch will be thrown from the center.\nYour goal is to click the ball right as it enters the strike zone (the dotted box).",
+            `You will get ${totalTutorialPitches} practice pitches.\nLet's start!`,
+            "Great! Let's try again.",
+            "Tutorial complete!\nYou're ready for a real game."
+        ];
+
+        function startTutorial() {
+            isTutorialActive = true;
+            elements.gameContainer.style.display = 'block';
+            elements.gameContainer.classList.add('tutorial-mode');
+            elements.tutorialOverlay.style.display = 'flex';
+            tutorialPitchCount = 0;
+            currentTutorialStep = 0;
+            showTutorialStep(currentTutorialStep);
+        }
+
+        function showTutorialStep(stepIndex) {
+            elements.tutorialMessage.textContent = tutorialMessages[stepIndex];
+            elements.tutorialNextButton.textContent = "NEXT";
+            
+            if (stepIndex === 2) { // START
+                elements.tutorialNextButton.textContent = "START BATTING PRACTICE";
+            } else if (stepIndex >= tutorialMessages.length -1) { // FINISH
+                elements.tutorialNextButton.textContent = "FINISH";
+            }
+        }
+
+        elements.tutorialNextButton.addEventListener('click', () => {
+            currentTutorialStep++;
+
+            if (currentTutorialStep === tutorialMessages.length - 2) { // 배팅볼 던지는 단계
+                 elements.tutorialOverlay.style.display = 'none';
+                 runTutorialPitch();
+            } else if (currentTutorialStep >= tutorialMessages.length) { 
+                endTutorial();
+            } else {
+                showTutorialStep(currentTutorialStep);
+            }
+        });
+
+        function runTutorialPitch() {
+            if (tutorialPitchCount >= totalTutorialPitches) {
+                elements.tutorialOverlay.style.display = 'flex';
+                showTutorialStep(tutorialMessages.length - 1);
+                return;
+            }
+            tutorialPitchCount++;
+            elements.pitchResult.textContent = `PRACTICE SWING: ${tutorialPitchCount} / ${totalTutorialPitches}`;
+            
+            resetBallPosition();
+            const szRect = getStrikeZoneRect();
+            const targetX = szRect.left + szRect.width / 2;
+            const targetY = szRect.top + szRect.height / 2;
+            
+            const pitchData = {
+                centerX: targetX,
+                centerY: targetY,
+                pitchTypeInfo: PITCH_TYPES.FOUR_SEAM,
+                speed: 90 
+            };
+
+            const animationDuration = calculateAnimationDuration(pitchData.speed);
+            const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
+            
+            createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
+            elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
+            
+            const tutorialSwingHandler = () => {
+                elements.field.removeEventListener('click', tutorialSwingHandler);
+                animateBattedBall({type:'HIT', value: 1}, {x: pitchData.centerX, y: pitchData.centerY}, () => {
+                    setTimeout(runTutorialPitch, 1000); // 1초 후 다음 공
+                });
+            };
+            elements.field.addEventListener('click', tutorialSwingHandler);
+        }
+
+        function endTutorial() {
+            isTutorialActive = false;
+            elements.gameContainer.style.display = 'none';
+            elements.gameContainer.classList.remove('tutorial-mode');
+            elements.tutorialOverlay.style.display = 'none';
+            resetGame();
+        }
     });
 </script>
 </body>
