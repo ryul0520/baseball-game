@@ -20,7 +20,7 @@
             margin: 0;
             overflow: hidden;
         }
-        #title-screen, #difficulty-screen, #game-over-screen {
+        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -40,6 +40,7 @@
         }
         #difficulty-screen { z-index: 199; display: none; }
         #game-over-screen { z-index: 150; display: none; }
+        #playball-overlay { z-index: 101; display: none; }
 
         #game-title, #difficulty-title, #game-result-title {
             font-size: 4rem;
@@ -62,6 +63,11 @@
             margin-bottom: 30px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
+        .winner-row {
+            background-color: #fffbe6 !important;
+            font-weight: bold;
+        }
+        .winner-row .cell { color: #000; }
         #final-scoreboard-container .scoreboard-row { color: #333; }
         #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
 
@@ -70,16 +76,27 @@
             flex-direction: column;
             gap: 15px;
         }
-        #game-start-button, .difficulty-button, #play-again-button {
+        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button {
              padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
             color: #000; background-color: #fff; border: 2px solid #000;
             border-radius: 5px; cursor: pointer; transition: all 0.3s;
             width: 250px;
         }
-        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover {
+        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover {
             background-color: #000;
             color: #fff;
         }
+        #initial-playball-button {
+            font-size: 2.5rem; padding: 20px 60px; width: auto;
+            border: 3px solid #fff; background-color: rgba(0,0,0,0.5);
+            color: #fff; text-shadow: 2px 2px 4px #000;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5); text-transform: uppercase;
+        }
+        #initial-playball-button:hover {
+            background-color: rgba(255,255,255,1); color: #000;
+            border-color: #000; text-shadow: none;
+        }
+
         @keyframes fadeOutScreen {
             from { opacity: 1; }
             to { opacity: 0; pointer-events: none; }
@@ -98,15 +115,15 @@
             z-index: 99;
         }
         
-        /* --- [핵심] 반응형 스코어보드 스타일 --- */
+        /* --- [핵심] 모든 정보를 표시하는 반응형 스코어보드 스타일 --- */
         #full-scoreboard, #final-scoreboard-container {
             border: 1px solid #333;
             margin-bottom: 10px;
         }
         .scoreboard-row {
             display: grid;
-            /* 팀이름(3), 12개 이닝(각각 1), R(1.2), H/E/B(각각 0.9) 비율로 열 너비 설정 */
-            grid-template-columns: 3fr repeat(12, 1fr) 1.2fr 0.9fr 0.9fr 0.9fr;
+            /* 팀이름(2.5), 12개 이닝(각각 1), R(1.2), H/E/B(각각 0.9) 비율로 유동적인 너비 설정 */
+            grid-template-columns: 2.5fr repeat(12, 1fr) 1.2fr 0.9fr 0.9fr 0.9fr;
         }
         .header-row {
             font-weight: bold;
@@ -117,18 +134,18 @@
             padding: 4px 1px; /* 좌우 여백 최소화 */
             border-left: 1px solid #ccc;
             border-top: 1px solid #ccc;
-            font-size: 0.75rem; /* 글자 크기 살짝 줄임 */
+            font-size: 0.75rem; /* 글자 크기 조정 */
             text-align: center;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow: hidden; /* 글자가 넘칠 경우 숨김 */
+            text-overflow: ellipsis; /* 글자가 넘칠 경우 ...으로 표시 */
+            white-space: nowrap; /* 줄바꿈 방지 */
         }
         .team-name {
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.8rem; /* 팀 이름은 약간 더 크게 */
             border-left: none;
             justify-content: flex-start;
             padding-left: 5px;
@@ -213,31 +230,6 @@
             padding: 20px 40px; font-size: 2rem; font-weight: bold;
             border-radius: 5px; border: 2px solid #000;
         }
-        
-        #playball-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-            border-radius: 5px;
-        }
-        #initial-playball-button {
-            font-size: 2.5rem; padding: 20px 60px;
-            width: auto; border: 3px solid #fff;
-            background-color: rgba(0,0,0,0.5); color: #fff;
-            text-shadow: 2px 2px 4px #000;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5);
-            text-transform: uppercase;
-            cursor: pointer; transition: all 0.3s;
-        }
-        #initial-playball-button:hover {
-            background-color: rgba(255,255,255,1); color: #000;
-            border-color: #000; text-shadow: none;
-        }
-
         #cold-game-button {
             position: absolute; bottom: 10px; right: 10px;
             padding: 4px 8px; font-size: 0.7rem;
@@ -274,12 +266,12 @@
         <div id="final-scoreboard-container"></div>
         <button id="play-again-button">다시하기</button>
     </div>
-
-<div class="game-container">
+    
     <div id="playball-overlay">
         <button id="initial-playball-button">PLAY BALL</button>
     </div>
 
+<div class="game-container">
     <div id="turn-overlay" style="display: none;">
         <div id="turn-message"></div>
     </div>
@@ -316,8 +308,6 @@
 </div>
 
 <script>
-    // 자바스크립트 코드는 변경 없이 그대로 사용하시면 됩니다.
-    // 모든 변경 사항은 CSS에서 처리되었습니다.
     document.addEventListener('DOMContentLoaded', () => {
         const elements = {
             titleScreen: document.getElementById('title-screen'),
@@ -807,13 +797,16 @@
             const awayScore = gameState.teams.away.R;
             
             let resultMessage = 'GAME OVER';
+            let winner = null;
             if (isColdGame) {
                 resultMessage = 'COLD GAME';
             } else {
                  if (homeScore > awayScore) {
                     resultMessage = 'HOME TEAM WINS!';
+                    winner = 'home';
                 } else if (awayScore > homeScore) {
                     resultMessage = 'AWAY TEAM WINS!';
+                    winner = 'away';
                 } else {
                     resultMessage = 'DRAW GAME!';
                 }
@@ -824,6 +817,12 @@
             
             elements.finalScoreboardContainer.innerHTML = ''; 
             const finalBoard = elements.fullScoreboard.cloneNode(true);
+
+            if (winner) {
+                const winnerRow = finalBoard.querySelector(`.${winner}-team-row`);
+                if (winnerRow) winnerRow.classList.add('winner-row');
+            }
+
             elements.finalScoreboardContainer.appendChild(finalBoard);
             
             elements.gameOverScreen.style.display = 'flex';
@@ -909,7 +908,7 @@
             ['away', 'home'].forEach(team => {
                 const teamState = gameState.teams[team];
                 const row = document.createElement('div');
-                row.className = 'scoreboard-row';
+                row.className = `scoreboard-row ${team}-team-row`;
                 if (team === 'home') row.id = 'home-row';
 
                 let html = `<div class="cell team-name">${teamState.name}</div>`;
@@ -949,14 +948,19 @@
                     setDifficulty(button.dataset.difficulty);
                     elements.difficultyScreen.style.animation = 'fadeOutScreen 0.5s forwards';
                     elements.gameContainer.style.display = 'block';
+                    elements.playballOverlay.style.display = 'flex';
                     isGameActive = true;
                 });
             });
 
             elements.initialPlayballButton.addEventListener('click', () => {
                 if (isGameActive) {
-                    elements.playballOverlay.style.display = 'none';
-                    startGameTurn();
+                    elements.playballOverlay.style.animation = 'fadeOutScreen 0.5s forwards';
+                    setTimeout(() => {
+                        elements.playballOverlay.style.display = 'none';
+                        elements.playballOverlay.style.animation = '';
+                         startGameTurn();
+                    }, 500);
                 }
             });
 
