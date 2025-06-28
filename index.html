@@ -393,6 +393,7 @@
                 resetBallPosition();
                 elements.strikeZone.style.opacity = '0';
                 
+                // [핵심 수정] 투구 시작 대기 시간을 1초로 변경
                 setTimeout(() => {
                     const pitchData = decidePitchPath();
                     const animationDuration = calculateAnimationDuration(pitchData.speed);
@@ -414,10 +415,9 @@
                         const swingTime = Date.now();
                         let result;
 
-                        // [핵심 수정] 늦은 스윙 판정
                         if (swingTime > arrivalTime && swingTime <= arrivalTime + 200) {
                             result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                        } else { // 타이밍이 늦지 않았을 경우, 정확도 판정
+                        } else {
                             const fieldRect = elements.field.getBoundingClientRect();
                             const clickX = e.clientX - fieldRect.left;
                             const clickY = e.clientY - fieldRect.top;
@@ -465,9 +465,9 @@
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
                             if (onCompletion) onCompletion(atBatEnded);
                         }
-                    }, animationDuration + 250); // 늦은 스윙 판정 시간까지 고려
+                    }, animationDuration + 250);
 
-                }, 750); 
+                }, 1000); 
 
                 setTimeout(() => {
                     elements.strikeZone.style.opacity = '1';
@@ -564,11 +564,11 @@
                     return;
                 }
                 
-                gameState.isPitching = true;
                 const { centerX, centerY, isStrikeLocation, pitchTypeInfo, speed } = decidePitchPath();
                 const animationDuration = calculateAnimationDuration(speed);
                 const animationTarget = { finalLeft: centerX - (BALL_DIAMETER / 2), finalTop: centerY - (BALL_DIAMETER / 2) };
                 
+                gameState.isPitching = true;
                 resetBallPosition();
                 elements.strikeZone.style.opacity = '0';
                 
@@ -602,7 +602,7 @@
                             setTimeout(autoPitchLoop, delay);
                         }
                     }, animationDuration);
-                }, 750);
+                }, 1000);
 
                 setTimeout(() => {
                     elements.strikeZone.style.opacity = '1';
