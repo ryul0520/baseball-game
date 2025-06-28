@@ -20,7 +20,7 @@
             margin: 0;
             overflow: hidden;
         }
-        #title-screen, #difficulty-screen, #game-over-screen {
+        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -35,6 +35,8 @@
             z-index: 200;
             color: white;
             text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
         #difficulty-screen { z-index: 199; display: none; }
         #game-over-screen { z-index: 150; display: none; }
@@ -43,12 +45,26 @@
             font-size: 4rem;
             font-weight: bold;
             text-shadow: 3px 3px 6px #000;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         #final-score-display {
             font-size: 2.5rem;
-            margin-bottom: 40px;
+            margin-bottom: 25px;
+            font-weight: bold;
         }
+        #final-scoreboard-container {
+            background-color: rgba(255,255,255,0.9);
+            border-radius: 5px;
+            padding: 15px;
+            width: 100%;
+            max-width: 550px;
+            color: #000;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        #final-scoreboard-container .scoreboard-row { color: #333; }
+        #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
+
         #difficulty-buttons {
             display: flex;
             flex-direction: column;
@@ -64,6 +80,29 @@
             background-color: #000;
             color: #fff;
         }
+        /* --- [핵심] PLAY BALL 오버레이 & 버튼 스타일 개선 --- */
+        #playball-overlay {
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://source.unsplash.com/random/800x600/?baseball,field') no-repeat center center;
+            background-size: cover;
+            z-index: 101; /* 턴 메시지보다 위 */
+        }
+        #initial-playball-button {
+            font-size: 2.5rem;
+            padding: 20px 60px;
+            width: auto;
+            border: 3px solid #fff;
+            background-color: rgba(0,0,0,0.5);
+            color: #fff;
+            text-shadow: 2px 2px 4px #000;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+        #initial-playball-button:hover {
+            background-color: rgba(255,255,255,1);
+            color: #000;
+            border-color: #000;
+            text-shadow: none;
+        }
+
         @keyframes fadeOutScreen {
             from { opacity: 1; }
             to { opacity: 0; pointer-events: none; }
@@ -81,15 +120,15 @@
             position: relative;
             z-index: 99;
         }
-        #full-scoreboard {
-            display: grid;
-            grid-template-rows: auto auto auto;
+        /* --- [핵심] 반응형 스코어보드 스타일 --- */
+        #full-scoreboard, #final-scoreboard-container {
             border: 1px solid #333;
             margin-bottom: 10px;
         }
         .scoreboard-row {
             display: grid;
-            grid-template-columns: 4fr repeat(12, 1fr) 2fr 2fr 2fr 2fr;
+            /* 기본 (PC): 12이닝 + 통계 모두 표시 */
+            grid-template-columns: 3fr repeat(12, 1fr) repeat(4, 1.5fr);
         }
         .header-row {
             font-weight: bold;
@@ -102,11 +141,18 @@
             border-top: 1px solid #ccc;
             font-size: 0.8rem;
             text-align: center;
-            display: block;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .team-name {
             font-weight: bold;
             border-left: none;
+            justify-content: flex-start;
+            padding-left: 5px;
         }
         .stat-r, .stat-h, .stat-e, .stat-b {
             font-weight: bold;
@@ -115,83 +161,55 @@
         #home-row .cell {
             border-bottom: 1px solid #333;
         }
-        #field-container {
-            position: relative;
-        }
+        #field-container { position: relative; }
         #bases-diagram {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 60px;
-            height: 60px;
-            z-index: 10;
+            position: absolute; top: 10px; right: 10px;
+            width: 60px; height: 60px; z-index: 10;
         }
         .base {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            background-color: transparent;
-            border: 2px solid #bbb;
-            transform: rotate(45deg);
-            transition: all 0.3s;
+            position: absolute; width: 15px; height: 15px;
+            background-color: transparent; border: 2px solid #bbb;
+            transform: rotate(45deg); transition: all 0.3s;
         }
         #base-2b { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
         #base-1b { top: 50%; right: 0; transform: translateY(-50%) rotate(45deg); }
         #base-3b { top: 50%; left: 0; transform: translateY(-50%) rotate(45deg); }
         .base.runner-on { background-color: #fff; border-color: #000; }
         #field {
-            width: 100%;
-            height: 350px;
-            background-color: #4a4a4a;
-            border: 3px solid #1a1a1a;
-            position: relative;
-            overflow: hidden;
-            perspective: 500px;
+            width: 100%; height: 350px; background-color: #4a4a4a;
+            border: 3px solid #1a1a1a; position: relative;
+            overflow: hidden; perspective: 500px;
         }
         #strike-zone {
-            position: absolute;
-            width: var(--sz-width);
-            height: var(--sz-height);
+            position: absolute; width: var(--sz-width); height: var(--sz-height);
             border: 2px dotted rgba(255, 255, 255, 0.8);
-            left: var(--sz-left);
-            top: var(--sz-top);
-            box-sizing: border-box;
-            opacity: 1; 
+            left: var(--sz-left); top: var(--sz-top);
+            box-sizing: border-box; opacity: 1; 
             transition: opacity 0.5s ease-in-out;
         }
-        #strike-zone.strike-hit {
-            border-color: #fff;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
+        #strike-zone.strike-hit { border-color: #fff; background-color: rgba(255, 255, 255, 0.1); }
         #home-plate {
-            position: absolute;
-            width: 82px; height: 82px;
+            position: absolute; width: 82px; height: 82px;
             background-color: #e0e0e0; border: 1px solid #333;
             bottom: 7px; left: 50%; transform: translateX(-50%);
             clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 50% 100%, 0% 55%);
         }
         #baseball {
-            position: absolute;
-            width: 4.5px; height: 4.5px;
+            position: absolute; width: 4.5px; height: 4.5px;
             background: #fff; border-radius: 50%;
-            top: 20%; left: calc(50% - 2.25px);
-            transform: scale(1);
+            top: 20%; left: calc(50% - 2.25px); transform: scale(1);
         }
         #pitch-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .controls { 
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
+            margin-top: 15px; display: flex; justify-content: center;
         }
-        #pitch-button, #start-turn-button {
+        #pitch-button {
             padding: 12px 30px; font-size: 1.2rem; font-weight: bold;
             color: #fff; background-color: #000; border: 2px solid #000;
             border-radius: 0; cursor: pointer; transition: background-color 0.3s, color 0.3s;
         }
-        #pitch-button:hover:not(:disabled),
-        #start-turn-button:hover:not(:disabled) { background-color: #fff; color: #000; }
-        #pitch-button:disabled,
-        #start-turn-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
+        #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
+        #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
         .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
         #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
         #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
@@ -204,75 +222,51 @@
         .dot-s.active { background-color: #f7ce00; }
         .dot-o.active { background-color: #e53935; }
         #turn-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none;
             animation: fadeOverlay 1.5s;
         }
         #turn-message {
-            background-color: #fff;
-            color: #000;
-            padding: 20px 40px;
-            font-size: 2rem;
-            font-weight: bold;
-            border-radius: 5px;
-            border: 2px solid #000;
+            background-color: #fff; color: #000;
+            padding: 20px 40px; font-size: 2rem; font-weight: bold;
+            border-radius: 5px; border: 2px solid #000;
         }
         #cold-game-button {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            padding: 4px 8px;
-            font-size: 0.7rem;
-            background-color: #c0392b;
-            color: white;
-            border: 1px solid #a93226;
-            border-radius: 3px;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: opacity 0.3s;
+            position: absolute; bottom: 10px; right: 10px;
+            padding: 4px 8px; font-size: 0.7rem;
+            background-color: #c0392b; color: white;
+            border: 1px solid #a93226; border-radius: 3px;
+            cursor: pointer; opacity: 0.7; transition: opacity 0.3s;
         }
-        #cold-game-button:hover {
-            opacity: 1;
-        }
+        #cold-game-button:hover { opacity: 1; }
         
         @keyframes fadeOverlay {
-            0% { opacity: 0; }
-            25% { opacity: 1; }
-            75% { opacity: 1; }
-            100% { opacity: 0; }
+            0% { opacity: 0; } 25% { opacity: 1; }
+            75% { opacity: 1; } 100% { opacity: 0; }
         }
-        @media (max-width: 480px) {
-            .game-container {
-                padding: 10px;
-            }
+
+        /* --- [핵심] 반응형 스코어보드 미디어 쿼리 --- */
+        /* 태블릿 사이즈 (768px 이하) - 9이닝까지 표시 */
+        @media (max-width: 768px) {
             .scoreboard-row {
-                grid-template-columns: 3fr repeat(6, 1fr) 1.5fr 1.5fr 1.5fr 1.5fr;
+                grid-template-columns: 3fr repeat(9, 1fr) repeat(4, 1.5fr);
             }
-            .cell {
-                font-size: 0.7rem;
-                padding: 3px 1px;
+            .scoreboard-row .cell:nth-child(n+12):nth-child(-n+14) {
+                display: none; /* 10, 11, 12 이닝 숨기기 */
             }
-            .scoreboard-row .cell:nth-child(n+8):nth-child(-n+13) {
-                display: none;
+        }
+        /* 모바일 사이즈 (480px 이하) - 6이닝까지 표시 */
+        @media (max-width: 480px) {
+            #game-title, #difficulty-title, #game-result-title { font-size: 2.5rem; }
+            #final-score-display { font-size: 2rem; }
+            .scoreboard-row {
+                grid-template-columns: 2.5fr repeat(6, 1fr) repeat(4, 1.2fr);
             }
-            #pitch-result {
-                font-size: 1.2rem;
-            }
-            #pitch-info {
-                font-size: 0.8rem;
-            }
-            #game-title, #difficulty-title {
-                font-size: 3rem;
+             .scoreboard-row .cell:nth-child(n+8):nth-child(-n+14) {
+                display: none; /* 7, 8, 9, 10, 11, 12 이닝 숨기기 */
             }
         }
     </style>
@@ -295,25 +289,18 @@
     <div id="game-over-screen">
         <h1 id="game-result-title">GAME OVER</h1>
         <div id="final-score-display">AWAY 0 : 0 HOME</div>
+        <div id="final-scoreboard-container"></div>
         <button id="play-again-button">다시하기</button>
     </div>
 
 <div class="game-container">
+    <div id="playball-overlay">
+        <button id="initial-playball-button">PLAY BALL</button>
+    </div>
     <div id="turn-overlay" style="display: none;">
         <div id="turn-message"></div>
     </div>
     <div id="full-scoreboard">
-        <div class="scoreboard-row header-row">
-            <div class="cell team-name">TEAM</div>
-            <div class="cell">1</div><div class="cell">2</div><div class="cell">3</div>
-            <div class="cell">4</div><div class="cell">5</div><div class="cell">6</div>
-            <div class="cell">7</div><div class="cell">8</div><div class="cell">9</div>
-            <div class="cell">10</div><div class="cell">11</div><div class="cell">12</div>
-            <div class="cell stat-r">R</div><div class="cell stat-h">H</div><div class="cell stat-e">E</div>
-            <div class="cell stat-b">B</div>
-        </div>
-        <div class="scoreboard-row" id="away-row"></div>
-        <div class="scoreboard-row" id="home-row"></div>
     </div>
     <div id="field-container">
         <div id="bases-diagram">
@@ -331,7 +318,6 @@
         </div>
     </div>
     <div class="controls">
-        <button id="start-turn-button">PLAY BALL</button>
         <button id="pitch-button" style="display: none;">START PITCH</button>
     </div>
     <div class="bso-board">
@@ -356,13 +342,15 @@
             gameOverScreen: document.getElementById('game-over-screen'),
             gameResultTitle: document.getElementById('game-result-title'),
             finalScoreDisplay: document.getElementById('final-score-display'),
+            finalScoreboardContainer: document.getElementById('final-scoreboard-container'),
             playAgainButton: document.getElementById('play-again-button'),
             gameContainer: document.querySelector('.game-container'),
             pitchButton: document.getElementById('pitch-button'), 
-            startTurnButton: document.getElementById('start-turn-button'),
             coldGameButton: document.getElementById('cold-game-button'),
             turnOverlay: document.getElementById('turn-overlay'),
             turnMessage: document.getElementById('turn-message'),
+            playballOverlay: document.getElementById('playball-overlay'),
+            initialPlayballButton: document.getElementById('initial-playball-button'),
             ball: document.getElementById('baseball'),
             strikeZone: document.getElementById('strike-zone'), 
             pitchMarkers: document.getElementById('pitch-markers'),
@@ -372,8 +360,7 @@
             ballDots: document.getElementById('ball-dots'),
             strikeDots: document.getElementById('strike-dots'), 
             outDots: document.getElementById('out-dots'),
-            awayRow: document.getElementById('away-row'), 
-            homeRow: document.getElementById('home-row'),
+            fullScoreboard: document.getElementById('full-scoreboard'),
             bases: [document.getElementById('base-1b'), document.getElementById('base-2b'), document.getElementById('base-3b')],
             animationStyle: document.getElementById('pitch-animation-style')
         };
@@ -389,7 +376,7 @@
         });
 
         let gameState = getInitialGameState();
-        let isGameActive = false; // --- [핵심 추가] 게임 활성화 상태 플래그
+        let isGameActive = false;
 
         const BALL_DIAMETER = 4.5;
         const FINAL_SCALE = 3.5;
@@ -539,8 +526,8 @@
         
         let swingListener = null;
 
-        function runPitchSequence(onCompletion) {
-            if (!isGameActive) return; // 게임 비활성화 시 실행 중단
+        function handlePlayerPitch(onCompletion) {
+            if (!isGameActive) return;
             gameState.isPitching = true;
             
             resetBallPosition();
@@ -564,11 +551,12 @@
                     hasSwung = true;
                     
                     elements.field.removeEventListener('click', swingListener);
+                    swingListener = null;
                     
                     const swingTime = Date.now();
                     let result;
 
-                    if (swingTime > arrivalTime && swingTime <= arrivalTime + 200) {
+                    if (swingTime < arrivalTime - 100 || swingTime > arrivalTime + 100) {
                         result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
                     } else {
                         const fieldRect = elements.field.getBoundingClientRect();
@@ -601,14 +589,12 @@
                     }
                 };
 
-                if(gameState.half === 'Bot') {
-                    swingListener = handleSwing;
-                    elements.field.addEventListener('click', swingListener);
-                }
+                swingListener = handleSwing;
+                elements.field.addEventListener('click', swingListener);
                 
                 setTimeout(() => {
                     if (!isGameActive) return;
-                    if(gameState.half === 'Bot' && swingListener) {
+                    if(swingListener) {
                         elements.field.removeEventListener('click', swingListener);
                     }
                     if (!hasSwung) {
@@ -646,7 +632,7 @@
         }
         
         function handlePitchResult(result, pitchTypeInfo, speed) {
-            if (!isGameActive) return false; // 게임 비활성화 시 실행 중단
+            if (!isGameActive) return false;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
             let displayText = '';
             let atBatEnded = false;
@@ -712,21 +698,58 @@
         }
         
         function autoPitchLoop() {
-            if (!isGameActive) return; // --- [핵심] 가드 클로즈: 게임이 비활성화 상태면 AI 루프 즉시 중단
+            if (!isGameActive || gameState.half !== 'Top' || gameState.isPitching) return;
+            
             if (gameState.bso.o >= 3) {
                 setTimeout(() => { if (isGameActive) changeInning(); }, 1500);
-                return; 
-            }
-             if (gameState.half !== 'Top' || gameState.isPitching) {
                 return;
             }
-            runPitchSequence(() => {
-                if (!isGameActive) return;
-                const delay = 1000;
-                setTimeout(() => { if (isGameActive) autoPitchLoop(); }, delay);
-            });
+            
+            gameState.isPitching = true;
+            resetBallPosition();
+            elements.strikeZone.style.opacity = '0';
+
+            setTimeout(() => { 
+                if (!isGameActive) { gameState.isPitching = false; return; }
+
+                const pitchData = decidePitchPath();
+                const animationDuration = calculateAnimationDuration(pitchData.speed);
+                const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
+
+                createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
+                elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
+
+                setTimeout(() => { 
+                    if (!isGameActive) { gameState.isPitching = false; return; }
+                    
+                    let result;
+                    if (pitchData.isStrikeLocation) {
+                        result = decideBattedBallResult(0);
+                    } else {
+                        result = { type: 'BALL' };
+                    }
+                    
+                    const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                    gameState.isPitching = false;
+                    
+                    const delay = atBatEnded ? 1200 : 600;
+                    setTimeout(() => {
+                        if (atBatEnded && gameState.bso.o < 3) {
+                             elements.pitchResult.textContent = 'Next Batter';
+                        }
+                        autoPitchLoop();
+                    }, delay);
+
+                }, animationDuration + 250);
+
+                 setTimeout(() => {
+                    if (!isGameActive) return;
+                    elements.strikeZone.style.opacity = '1';
+                }, animationDuration + 500);
+
+            }, 600);
         }
-        
+
         function showTurnMessage(message, callback) {
             elements.turnMessage.textContent = message;
             elements.turnOverlay.style.display = 'flex';
@@ -736,18 +759,14 @@
 
             setTimeout(() => {
                 elements.turnOverlay.style.display = 'none';
-                setTimeout(() => { if (isGameActive) callback(); }, 500); // 메시지 사라지고 0.5초 후 콜백 실행 (활성화 상태 체크)
+                setTimeout(() => { if (isGameActive) callback(); }, 500);
             }, 1500);
         }
 
         function startGameTurn() {
             if (!isGameActive) return;
-            elements.startTurnButton.style.display = 'none'; 
             if (gameState.half === 'Top') {
-                showTurnMessage("AI TURN", () => {
-                    elements.pitchResult.textContent = 'Next Batter';
-                    autoPitchLoop();
-                });
+                showTurnMessage("AI TURN", autoPitchLoop);
             } else {
                 showTurnMessage("YOUR TURN", () => {
                     elements.pitchButton.style.display = 'block';
@@ -794,10 +813,9 @@
         }
         
         function endGame(isColdGame = false) {
-            isGameActive = false; // --- [핵심] 게임 종료 시 플래그를 꺼서 모든 예약 동작을 막음
+            isGameActive = false;
 
             elements.pitchButton.style.display = 'none'; 
-            elements.startTurnButton.style.display = 'none';
             elements.pitchButton.disabled = true;
 
             const homeScore = gameState.teams.home.R; 
@@ -819,11 +837,15 @@
             elements.gameResultTitle.textContent = resultMessage;
             elements.finalScoreDisplay.textContent = `AWAY ${awayScore} : ${homeScore} HOME`;
             
+            elements.finalScoreboardContainer.innerHTML = ''; 
+            const finalBoard = elements.fullScoreboard.cloneNode(true);
+            elements.finalScoreboardContainer.appendChild(finalBoard);
+            
             elements.gameOverScreen.style.display = 'flex';
         }
 
         function resetGame() {
-            isGameActive = false; // --- [핵심] 게임 리셋 시 플래그를 꺼서 모든 예약 동작을 막음
+            isGameActive = false;
             
             gameState = getInitialGameState();
             
@@ -832,9 +854,8 @@
             elements.difficultyScreen.style.animation = 'none'; 
             elements.gameContainer.style.display = 'none';
             
+            elements.playballOverlay.style.display = 'flex';
             elements.pitchButton.style.display = 'none';
-            elements.startTurnButton.style.display = 'block';
-            elements.startTurnButton.disabled = false;
 
             elements.pitchResult.textContent = 'PLAY BALL!';
             elements.pitchInfo.textContent = '';
@@ -888,9 +909,25 @@
             Array.from(elements.strikeDots.children).forEach((dot, i) => dot.classList.toggle('active', i < s));
             Array.from(elements.outDots.children).forEach((dot, i) => dot.classList.toggle('active', i < o));
         }
+
         function updateFullScoreboard() {
+            elements.fullScoreboard.innerHTML = ''; 
+            
+            const headerRow = document.createElement('div');
+            headerRow.className = 'scoreboard-row header-row';
+            let headerHTML = `<div class="cell team-name">TEAM</div>`;
+            for(let i = 1; i <= 12; i++) { headerHTML += `<div class="cell">${i}</div>`; }
+            headerHTML += `<div class="cell stat-r">R</div><div class="cell stat-h">H</div><div class="cell stat-e">E</div><div class="cell stat-b">B</div>`;
+            headerRow.innerHTML = headerHTML;
+            elements.fullScoreboard.appendChild(headerRow);
+
             ['away', 'home'].forEach(team => {
-                const teamState = gameState.teams[team]; const row = elements[`${team}Row`]; let html = `<div class="cell team-name">${teamState.name}</div>`;
+                const teamState = gameState.teams[team];
+                const row = document.createElement('div');
+                row.className = 'scoreboard-row';
+                if (team === 'home') row.id = 'home-row';
+
+                let html = `<div class="cell team-name">${teamState.name}</div>`;
                 teamState.inningScores.forEach((score, index) => {
                     let displayValue = '';
                     if (score !== null) {
@@ -904,11 +941,15 @@
                     }
                     html += `<div class="cell">${displayValue}</div>`;
                 });
-                html += `<div class="cell stat-r">${teamState.R}</div>`; html += `<div class="cell stat-h">${teamState.H}</div>`;
-                html += `<div class="cell stat-e">${teamState.E}</div>`; html += `<div class="cell stat-b">${teamState.BB}</div>`;
+                html += `<div class="cell stat-r">${teamState.R}</div>`;
+                html += `<div class="cell stat-h">${teamState.H}</div>`;
+                html += `<div class="cell stat-e">${teamState.E}</div>`;
+                html += `<div class="cell stat-b">${teamState.BB}</div>`;
                 row.innerHTML = html;
+                elements.fullScoreboard.appendChild(row);
             });
         }
+
         function resetBallPosition() {
             elements.ball.style.animation = ''; elements.ball.style.top = `calc(20% - ${BALL_DIAMETER / 2}px)`;
             elements.ball.style.left = `calc(50% - ${BALL_DIAMETER / 2}px)`; elements.ball.style.transform = 'scale(1)';
@@ -929,18 +970,21 @@
                     setDifficulty(button.dataset.difficulty);
                     elements.difficultyScreen.style.animation = 'fadeOutScreen 0.5s forwards';
                     elements.gameContainer.style.display = 'block';
-                    isGameActive = true; // --- [핵심] 난이도 선택 후 게임 활성화
+                    isGameActive = true;
                 });
             });
 
-            elements.startTurnButton.addEventListener('click', () => {
-                if (isGameActive) startGameTurn();
+            elements.initialPlayballButton.addEventListener('click', () => {
+                if (isGameActive) {
+                    elements.playballOverlay.style.display = 'none';
+                    startGameTurn();
+                }
             });
 
             elements.pitchButton.addEventListener('click', () => {
                 if (isGameActive && gameState.half === 'Bot' && !gameState.isPitching) {
                     elements.pitchButton.disabled = true;
-                    runPitchSequence((atBatEnded) => {
+                    handlePlayerPitch((atBatEnded) => {
                        if (!isGameActive) return;
                        gameState.isPitching = false;
                        if (gameState.bso.o >= 3) {
@@ -964,7 +1008,7 @@
             elements.playAgainButton.addEventListener('click', resetGame);
 
             elements.coldGameButton.addEventListener('click', () => {
-                if (confirm('정말로 게임을 포기하시겠습니까?')) {
+                if (isGameActive && confirm('정말로 게임을 포기하시겠습니까?')) {
                     endGame(true);
                 }
             });
