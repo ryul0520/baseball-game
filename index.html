@@ -253,18 +253,17 @@
         #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
         #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
         
-        /* [변경] 콜드게임 버튼 크기 및 위치 조정 */
+        /* [변경] 콜드게임 버튼 크기 80% 축소 */
         #cold-game-button {
             position: absolute;
-            bottom: 15px;
-            right: 15px;
+            bottom: 10px;
+            right: 10px;
             background-color: rgba(192, 57, 43, 0.7);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 5px 10px; /* 크기 1.5배 증가 */
-            font-size: 0.9rem; /* 폰트 크기 1.5배 증가 */
-            font-weight: bold;
-            border-radius: 5px; /* 테두리 둥글게 */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 2px 4px; /* 크기 축소 */
+            font-size: 0.5rem; /* 폰트 크기 축소 */
+            border-radius: 2px;
             cursor: pointer;
             z-index: 115;
             transition: background-color 0.3s;
@@ -417,8 +416,7 @@
             <div class="count-display"><span class="count-label">O</span><div class="dots" id="out-dots"></div></div>
         </div>
     </div>
-    <!-- [변경] 콜드게임 버튼 텍스트 수정 -->
-    <button id="cold-game-button">COLD GAME</button>
+    <button id="cold-game-button">COLD</button>
 </div>
 
 <script>
@@ -500,12 +498,14 @@
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
 
-        const DIFFICULTY_AI_SETTINGS = {
-            easy:    { swingChanceStrike: 0.80, swingChanceBall: 0.35, contactChance: 0.75, foulChance: 0.30 },
-            normal:  { swingChanceStrike: 0.88, swingChanceBall: 0.20, contactChance: 0.85, foulChance: 0.20 },
-            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.12, contactChance: 0.92, foulChance: 0.15 },
-            extreme: { swingChanceStrike: 0.98, swingChanceBall: 0.07, contactChance: 0.97, foulChance: 0.10 }
+        // [변경] AI 타격 설정 통합 (Normal 수준으로 고정)
+        const AI_BATTING_SETTINGS = {
+            swingChanceStrike: 0.88, 
+            swingChanceBall: 0.20, 
+            contactChance: 0.85, 
+            foulChance: 0.20 
         };
+        
         let currentDifficulty = 'normal';
 
         function setDifficulty(level) {
@@ -559,8 +559,7 @@
             let penalty = distanceFromCenter / 100;
             baseRand += penalty * 0.5; 
             
-            const aiSettings = DIFFICULTY_AI_SETTINGS[currentDifficulty];
-            const foulChance = isAI ? aiSettings.foulChance : 0.08;
+            const foulChance = isAI ? AI_BATTING_SETTINGS.foulChance : 0.08;
 
             if (baseRand < foulChance) return { type: 'FOUL' };
             else if (baseRand < (foulChance + 0.60)) {
@@ -849,11 +848,10 @@
                     if (!isGameActive) { gameState.isPitching = false; return; }
                     
                     let result;
-                    const aiSettings = DIFFICULTY_AI_SETTINGS[currentDifficulty];
-                    const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
+                    const swingChance = pitchData.isStrikeLocation ? AI_BATTING_SETTINGS.swingChanceStrike : AI_BATTING_SETTINGS.swingChanceBall;
 
                     if (Math.random() < swingChance) {
-                        if (Math.random() < aiSettings.contactChance) {
+                        if (Math.random() < AI_BATTING_SETTINGS.contactChance) {
                             result = decideBattedBallResult(0, true);
                             wasHit = (result.type !== 'FOUL');
                         } else {
