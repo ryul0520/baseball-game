@@ -252,6 +252,28 @@
         }
         #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
         #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
+        
+        /* [변경] 콜드게임 버튼 크기 및 위치 조정 */
+        #cold-game-button {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            background-color: rgba(192, 57, 43, 0.7);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 5px 10px; /* 크기 1.5배 증가 */
+            font-size: 0.9rem; /* 폰트 크기 1.5배 증가 */
+            font-weight: bold;
+            border-radius: 5px; /* 테두리 둥글게 */
+            cursor: pointer;
+            z-index: 115;
+            transition: background-color 0.3s;
+            display: none;
+        }
+        #cold-game-button:hover {
+            background-color: rgba(169, 50, 38, 0.9);
+        }
+
         .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
         #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
         #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
@@ -280,8 +302,9 @@
         .tutorial-mode #full-scoreboard,
         .tutorial-mode .bso-board,
         .tutorial-mode #bases-diagram,
-        .tutorial-mode .controls {
-            display: none;
+        .tutorial-mode .controls,
+        .tutorial-mode #cold-game-button {
+            display: none !important;
         }
         #tutorial-overlay {
             position: absolute;
@@ -394,6 +417,8 @@
             <div class="count-display"><span class="count-label">O</span><div class="dots" id="out-dots"></div></div>
         </div>
     </div>
+    <!-- [변경] 콜드게임 버튼 텍스트 수정 -->
+    <button id="cold-game-button">COLD GAME</button>
 </div>
 
 <script>
@@ -416,6 +441,7 @@
             playAgainButton: document.getElementById('play-again-button'),
             gameContainer: document.querySelector('.game-container'),
             pitchButton: document.getElementById('pitch-button'), 
+            coldGameButton: document.getElementById('cold-game-button'),
             turnOverlay: document.getElementById('turn-overlay'),
             turnMessage: document.getElementById('turn-message'),
             playballOverlay: document.getElementById('playball-overlay'),
@@ -473,15 +499,22 @@
             hard:    { speedModifier: 0,   durationModifier: 0.95 },
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
-        let currentDifficulty = DIFFICULTY_SETTINGS.normal; 
+
+        const DIFFICULTY_AI_SETTINGS = {
+            easy:    { swingChanceStrike: 0.80, swingChanceBall: 0.35, contactChance: 0.75, foulChance: 0.30 },
+            normal:  { swingChanceStrike: 0.88, swingChanceBall: 0.20, contactChance: 0.85, foulChance: 0.20 },
+            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.12, contactChance: 0.92, foulChance: 0.15 },
+            extreme: { swingChanceStrike: 0.98, swingChanceBall: 0.07, contactChance: 0.97, foulChance: 0.10 }
+        };
+        let currentDifficulty = 'normal';
 
         function setDifficulty(level) {
-            currentDifficulty = DIFFICULTY_SETTINGS[level];
+            currentDifficulty = level;
         }
         
         function calculateAnimationDuration(speed) { 
             const baseSpeed = 150; 
-            const baseDuration = 300 * currentDifficulty.durationModifier;
+            const baseDuration = 300 * DIFFICULTY_SETTINGS[currentDifficulty].durationModifier;
             return Math.round(baseDuration * (baseSpeed / speed));
         }
 
@@ -508,7 +541,8 @@
                 const scale = 1 + (FINAL_SCALE - 1) * t;
                 keyframes += `${t * 100}% { top: ${point.y}px; left: ${point.x}px; transform: scale(${scale}); }`;
             }
-            keyframes += '}'; elements.animationStyle.innerHTML = keyframes;
+            keyframes += '}'; 
+            elements.animationStyle.innerHTML += keyframes;
         }
         
         function gaussianRandom(mean, stdDev) { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v); return num * stdDev + mean; }
@@ -520,13 +554,16 @@
             return rect;
         }
 
-        function decideBattedBallResult(distanceFromCenter) {
+        function decideBattedBallResult(distanceFromCenter, isAI = false) {
             let baseRand = Math.random();
             let penalty = distanceFromCenter / 100;
             baseRand += penalty * 0.5; 
             
-            if (baseRand < 0.08) return { type: 'FOUL' };
-            else if (baseRand < 0.60) {
+            const aiSettings = DIFFICULTY_AI_SETTINGS[currentDifficulty];
+            const foulChance = isAI ? aiSettings.foulChance : 0.08;
+
+            if (baseRand < foulChance) return { type: 'FOUL' };
+            else if (baseRand < (foulChance + 0.60)) {
                 const outRand = Math.random();
                 if (outRand < 0.45) return { type: 'OUT', subType: 'FLY' };
                 if (outRand < 0.80) return { type: 'OUT', subType: 'GROUND' };
@@ -562,7 +599,7 @@
             else if (pitchRand < 0.85) pitchTypeInfo = PITCH_TYPES.CURVEBALL; else if (pitchRand < 0.95) pitchTypeInfo = PITCH_TYPES.CHANGEUP;
             else pitchTypeInfo = PITCH_TYPES.FORKBALL;
 
-            const speed = getRandomInt(pitchTypeInfo.speedRange[0], pitchTypeInfo.speedRange[1]) + currentDifficulty.speedModifier;
+            const speed = getRandomInt(pitchTypeInfo.speedRange[0], pitchTypeInfo.speedRange[1]) + DIFFICULTY_SETTINGS[currentDifficulty].speedModifier;
             
             return { centerX, centerY, isStrikeLocation, pitchTypeInfo, speed };
         }
@@ -605,7 +642,8 @@
             
             resetBallPosition();
             elements.strikeZone.style.opacity = '0';
-            
+            elements.animationStyle.innerHTML = '';
+
             setTimeout(() => {
                 if (!isGameActive) return;
                 const pitchData = decidePitchPath();
@@ -641,7 +679,7 @@
                         if (distance <= SOLID_CONTACT_THRESHOLD) {
                             const szRect = getStrikeZoneRect();
                             const distFromCenter = Math.sqrt(Math.pow(pitchData.centerX - (szRect.left + szRect.width / 2), 2) + Math.pow(pitchData.centerY - (szRect.top + szRect.height / 2), 2));
-                            result = decideBattedBallResult(distFromCenter);
+                            result = decideBattedBallResult(distFromCenter, false);
                         } else if (distance <= FOUL_THRESHOLD) {
                             result = { type: 'FOUL' };
                         } else {
@@ -649,7 +687,7 @@
                         }
                     }
                     
-                    if (result.type !== 'STRIKE') {
+                    if (result.type !== 'STRIKE' && result.type !== 'BALL' && result.type !== 'HIT_BY_PITCH') {
                         elements.strikeZone.classList.add('strike-hit');
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
@@ -793,6 +831,7 @@
             gameState.isPitching = true;
             resetBallPosition();
             elements.strikeZone.style.opacity = '0';
+            elements.animationStyle.innerHTML = '';
 
             setTimeout(() => { 
                 if (!isGameActive) { gameState.isPitching = false; return; }
@@ -803,27 +842,38 @@
 
                 createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
                 elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
+                
+                let wasHit = false;
 
                 setTimeout(() => { 
                     if (!isGameActive) { gameState.isPitching = false; return; }
                     
                     let result;
-                    if (pitchData.isStrikeLocation) {
-                        result = decideBattedBallResult(0);
+                    const aiSettings = DIFFICULTY_AI_SETTINGS[currentDifficulty];
+                    const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
+
+                    if (Math.random() < swingChance) {
+                        if (Math.random() < aiSettings.contactChance) {
+                            result = decideBattedBallResult(0, true);
+                            wasHit = (result.type !== 'FOUL');
+                        } else {
+                            result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
+                        }
                     } else {
-                        result = { type: 'BALL' };
+                        result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
                     }
                     
-                    const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                    gameState.isPitching = false;
-                    
-                    const delay = atBatEnded ? 1200 : 600;
-                    setTimeout(() => {
-                        if (atBatEnded && gameState.bso.o < 3) {
-                             elements.pitchResult.textContent = 'Next Batter';
-                        }
-                        autoPitchLoop();
-                    }, delay);
+                    if (wasHit || result.type === 'FOUL') {
+                        elements.strikeZone.classList.add('strike-hit');
+                        animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
+                            elements.strikeZone.classList.remove('strike-hit');
+                            const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                            finishAITurn(atBatEnded);
+                        });
+                    } else {
+                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        finishAITurn(atBatEnded);
+                    }
 
                 }, animationDuration + 250);
 
@@ -833,6 +883,17 @@
                 }, animationDuration + 500);
 
             }, 600);
+        }
+
+        function finishAITurn(atBatEnded) {
+            gameState.isPitching = false;
+            const delay = atBatEnded ? 1200 : 600;
+            setTimeout(() => {
+                if (atBatEnded && gameState.bso.o < 3) {
+                     elements.pitchResult.textContent = 'Next Batter';
+                }
+                autoPitchLoop();
+            }, delay);
         }
 
         function showTurnMessage(message, callback) {
@@ -850,9 +911,11 @@
 
         function startGameTurn() {
             if (!isGameActive) return;
+            elements.pitchButton.style.display = 'none';
+
             if (gameState.half === 'Top') {
                 showTurnMessage("AI TURN", autoPitchLoop);
-            } else {
+            } else { 
                 showTurnMessage("YOUR TURN", () => {
                     elements.pitchButton.style.display = 'block';
                     elements.pitchButton.disabled = false;
@@ -873,7 +936,8 @@
             const homeScore = gameState.teams.home.R;
             const awayScore = gameState.teams.away.R;
             
-            if ( (gameState.inning > gameState.regularInnings && gameState.half === 'Top' && homeScore !== awayScore) || 
+            if ( (gameState.inning >= gameState.regularInnings && gameState.half === 'Bot') ||
+                 (gameState.inning > gameState.regularInnings && gameState.half === 'Top' && homeScore !== awayScore) || 
                  (gameState.inning > gameState.maxInnings) ) {
                 endGame();
                 return;
@@ -899,6 +963,7 @@
         function endGame(isColdGame = false) {
             isGameActive = false;
             elements.pitchButton.style.display = 'none'; 
+            elements.coldGameButton.style.display = 'none';
             elements.pitchButton.disabled = true;
 
             const homeScore = gameState.teams.home.R; 
@@ -965,6 +1030,7 @@
             elements.playballOverlay.style.display = 'none';
             
             elements.pitchButton.style.display = 'none';
+            elements.coldGameButton.style.display = 'none';
 
             elements.pitchResult.textContent = 'PLAY BALL!';
             elements.pitchInfo.textContent = '';
@@ -982,44 +1048,35 @@
         }
         
         function handleAdvancement(basesToAdvance, isWalk = false, isDoublePlay = false) {
-            if (!isGameActive) return;
+            if (!isGameActive && !isTutorialActive) return;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
             let runsScored = 0;
-            const newRunners = [false, false, false];
-            
+            let newRunners = [...gameState.runners];
+            const originalRunners = [...gameState.runners];
+
             if (isDoublePlay) {
-                if(gameState.runners[2]) newRunners[2] = true; 
-                if(gameState.runners[1]) newRunners[1] = true;
+                newRunners = [false, originalRunners[1], originalRunners[2]];
             } else if (isWalk) {
-                 if (gameState.runners[0] && gameState.runners[1]) {
-                    if(gameState.runners[2]) runsScored++; 
-                    newRunners[2] = true; 
-                 } else if (gameState.runners[0]) {
+                 if (originalRunners[0] && originalRunners[1] && originalRunners[2]) {
+                    runsScored++;
+                 }
+                 if (originalRunners[0] && originalRunners[1]) {
+                    newRunners[2] = true;
+                 }
+                 if (originalRunners[0]) {
                     newRunners[1] = true;
                  }
-                 newRunners[0] = true; 
-                 if(gameState.runners[2] && !newRunners[2]) newRunners[2] = true;
-                 if(gameState.runners[1] && !newRunners[1] && !newRunners[2]) newRunners[1] = true;
+                 newRunners[0] = true;
             } else {
-                if (gameState.runners[2]) { runsScored++; }
-                if (gameState.runners[1]) {
-                    const nextBase = 1 + basesToAdvance;
-                    if (nextBase >= 3) {
-                         if (basesToAdvance === 1 && Math.random() < 0.5) { runsScored++; } 
-                         else if (basesToAdvance > 1) { runsScored++; } 
-                         else { newRunners[2] = true; }
-                    } else { newRunners[nextBase] = true; }
+                newRunners = [false, false, false];
+                if (originalRunners[2]) { runsScored++; }
+                if (originalRunners[1]) {
+                    (1 + basesToAdvance >= 3) ? runsScored++ : newRunners[1 + basesToAdvance] = true;
                 }
-                if (gameState.runners[0]) {
-                    const nextBase = 0 + basesToAdvance;
-                     if (nextBase >= 3) {
-                        if(basesToAdvance === 2 && Math.random() < 0.5) { runsScored++; } 
-                        else if (basesToAdvance > 2) { runsScored++; } 
-                        else { newRunners[2] = true; }
-                    } else { newRunners[nextBase] = true; }
+                if (originalRunners[0]) {
+                    (0 + basesToAdvance >= 3) ? runsScored++ : newRunners[0 + basesToAdvance] = true;
                 }
-
-                if (basesToAdvance >= 4) { runsScored++; } 
+                if (basesToAdvance >= 4) { runsScored++; }
                 else if (basesToAdvance > 0) { newRunners[basesToAdvance - 1] = true; }
             }
             
@@ -1034,19 +1091,22 @@
                 showScoreEffect(runsScored);
             }
             
-            if (gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings && gameState.teams.home.R > gameState.teams.away.R) {
+            if (isGameActive && gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings && gameState.teams.home.R > gameState.teams.away.R) {
                 setTimeout(() => { if (isGameActive) endGame(); }, 500);
             }
         }
+
         function resetBSCount() { gameState.bso.b = 0; gameState.bso.s = 0; }
+        
         function initBSODots() {
             elements.ballDots.innerHTML = '';
             elements.strikeDots.innerHTML = '';
             elements.outDots.innerHTML = '';
-            for (let i = 0; i < 3; i++) elements.ballDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-b' }));
-            for (let i = 0; i < 2; i++) elements.strikeDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-s' }));
+            for (let i = 0; i < 4; i++) elements.ballDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-b' }));
+            for (let i = 0; i < 3; i++) elements.strikeDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-s' }));
             for (let i = 0; i < 3; i++) elements.outDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-o' }));
         }
+
         function updateBSODots() {
             const { b, s, o } = gameState.bso;
             Array.from(elements.ballDots.children).forEach((dot, i) => dot.classList.toggle('active', i < b));
@@ -1090,7 +1150,7 @@
                     if (score !== null) {
                         displayValue = score;
                     } else if (isGameActive && isCurrentInning && isBattingNow) {
-                        displayValue = 0;
+                        displayValue = gameState.teams[team].inningScores[i] || 0;
                     }
                     html += `<div class="cell inning-${i + 1}">${displayValue}</div>`;
                 }
@@ -1164,7 +1224,8 @@
                     setTimeout(() => {
                         elements.playballOverlay.style.display = 'none';
                         elements.playballOverlay.style.animation = '';
-                         startGameTurn();
+                        elements.coldGameButton.style.display = 'block';
+                        startGameTurn();
                     }, 500);
                 }
             });
@@ -1190,6 +1251,14 @@
                            }
                        }
                     });
+                }
+            });
+            
+            elements.coldGameButton.addEventListener('click', () => {
+                if (isGameActive) {
+                    if (confirm("정말로 콜드게임을 선언하시겠습니까?\n즉시 패배로 처리됩니다.")) {
+                        endGame(true);
+                    }
                 }
             });
             
@@ -1233,9 +1302,9 @@
             elements.tutorialMessage.textContent = tutorialMessages[stepIndex];
             elements.tutorialNextButton.textContent = "NEXT";
             
-            if (stepIndex === 2) { // START
+            if (stepIndex === 2) { 
                 elements.tutorialNextButton.textContent = "START BATTING PRACTICE";
-            } else if (stepIndex >= tutorialMessages.length -1) { // FINISH
+            } else if (stepIndex >= tutorialMessages.length -1) { 
                 elements.tutorialNextButton.textContent = "FINISH";
             }
         }
@@ -1243,7 +1312,7 @@
         elements.tutorialNextButton.addEventListener('click', () => {
             currentTutorialStep++;
 
-            if (currentTutorialStep === tutorialMessages.length - 2) { // 배팅볼 던지는 단계
+            if (currentTutorialStep === tutorialMessages.length - 2) { 
                  elements.tutorialOverlay.style.display = 'none';
                  runTutorialPitch();
             } else if (currentTutorialStep >= tutorialMessages.length) { 
@@ -1263,6 +1332,7 @@
             elements.pitchResult.textContent = `PRACTICE SWING: ${tutorialPitchCount} / ${totalTutorialPitches}`;
             
             resetBallPosition();
+            elements.animationStyle.innerHTML = ''; 
             const szRect = getStrikeZoneRect();
             const targetX = szRect.left + szRect.width / 2;
             const targetY = szRect.top + szRect.height / 2;
@@ -1283,7 +1353,7 @@
             const tutorialSwingHandler = () => {
                 elements.field.removeEventListener('click', tutorialSwingHandler);
                 animateBattedBall({type:'HIT', value: 1}, {x: pitchData.centerX, y: pitchData.centerY}, () => {
-                    setTimeout(runTutorialPitch, 1000); // 1초 후 다음 공
+                    setTimeout(runTutorialPitch, 1000); 
                 });
             };
             elements.field.addEventListener('click', tutorialSwingHandler);
