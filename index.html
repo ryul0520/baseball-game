@@ -707,12 +707,10 @@
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
                             elements.strikeZone.classList.remove('strike-hit');
-                            if (atBatEnded) goToNextBatter();
                             if (onCompletion) onCompletion(atBatEnded);
                         });
                     } else {
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        if (atBatEnded) goToNextBatter();
                         if (onCompletion) onCompletion(atBatEnded);
                     }
                 };
@@ -728,7 +726,6 @@
                     if (!hasSwung) {
                         let result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED'};
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        if (atBatEnded) goToNextBatter();
                         if (onCompletion) onCompletion(atBatEnded);
                     }
                 }, animationDuration + 250);
@@ -757,6 +754,7 @@
             setTimeout(callback, battedAnim.duration * 1000);
         }
         
+        // [MODIFIED] Centralized goToNextBatter calls inside this function.
         function handlePitchResult(result, pitchTypeInfo, speed) {
             if (!isGameActive && !isTutorialActive) return false;
             const teamSide = gameState.half === 'Top' ? 'away' : 'home';
@@ -778,6 +776,7 @@
                         batter.atBats++;
                         resetBSCount();
                         atBatEnded = true;
+                        goToNextBatter();
                     } else {
                         displayText = result.subType === 'SWING_AND_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
                     }
@@ -790,6 +789,7 @@
                         handleAdvancement({ bases: 1, isWalk: true });
                         resetBSCount();
                         atBatEnded = true;
+                        goToNextBatter();
                     } else {
                         displayText = 'BALL';
                     }
@@ -841,6 +841,7 @@
                     
                     resetBSCount();
                     atBatEnded = true;
+                    goToNextBatter();
                     break;
                 case 'HIT':
                     currentTeam.H++;
@@ -850,6 +851,7 @@
                     handleAdvancement({ bases: result.value });
                     resetBSCount();
                     atBatEnded = true;
+                    goToNextBatter();
                     break;
             }
             
@@ -906,12 +908,12 @@
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             elements.strikeZone.classList.remove('strike-hit');
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                            if (atBatEnded) goToNextBatter();
+                            // [REMOVED] goToNextBatter() call removed, it's in handlePitchResult now.
                             finishAITurn(atBatEnded);
                         });
                     } else {
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        if (atBatEnded) goToNextBatter();
+                        // [REMOVED] goToNextBatter() call removed, it's in handlePitchResult now.
                         finishAITurn(atBatEnded);
                     }
 
@@ -1234,12 +1236,21 @@
             });
         }
         
+        // [MODIFIED] Added this helper function for English ordinals
+        function getOrdinal(n) {
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+        
+        // [MODIFIED] Changed to English format
         function updateBatterInfo() {
             if (!isGameActive) return;
             const teamSide = gameState.half === 'Top' ? 'away' : 'home';
             const batterIndex = gameState.currentBatterIndex[teamSide];
             const batter = gameState.batterStats[teamSide][batterIndex];
-            elements.batterInfo.textContent = `${batterIndex + 1}번 타자 (${batter.atBats}타수 ${batter.hits}안타)`;
+            const ordinal = getOrdinal(batterIndex + 1);
+            elements.batterInfo.textContent = `${ordinal} Batter (${batter.hits} / ${batter.atBats})`;
         }
 
         function resetBallPosition() {
