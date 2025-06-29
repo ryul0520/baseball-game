@@ -974,8 +974,10 @@
                     elements.pitchingControls.style.display = 'flex';
                     if (gameState.pitchingMode === 'auto') {
                         elements.pitchingPrompt.textContent = 'Simulating inning...';
+                        elements.pitchTypeButtons.style.display = 'none';
                         autoPitchLoop();
-                    } else { // manual
+                    } else {
+                        elements.pitchingPrompt.textContent = '';
                         elements.pitchTypeButtons.style.display = 'flex';
                         prepareForManualPitch();
                     }
@@ -1278,7 +1280,6 @@
         
         // --- Pitching & Auto-Simulate Functions ---
         
-        // [RESTORED] This function handles the auto-simulation of the AWAY team's turn.
         function autoPitchLoop() {
             if (!isGameActive || gameState.half !== 'Top' || gameState.isPitching) return;
             
@@ -1373,21 +1374,28 @@
             elements.pitchingPrompt.textContent = '';
             
             resetBallPosition();
+            elements.strikeZone.style.opacity = '1'; 
             elements.animationStyle.innerHTML = '';
+
+            const maxOffset = 25;
+            const offsetX = (Math.random() - 0.5) * 2 * maxOffset;
+            const offsetY = (Math.random() - 0.5) * 2 * maxOffset;
+            const finalX = targetX + offsetX;
+            const finalY = targetY + offsetY;
 
             const pitchTypeInfo = PITCH_TYPES[selectedPitchType];
             const speed = getRandomInt(pitchTypeInfo.speedRange[0], pitchTypeInfo.speedRange[1]) + DIFFICULTY_SETTINGS[currentDifficulty].speedModifier;
             const animationDuration = calculateAnimationDuration(speed);
-            const animationTarget = { finalLeft: targetX - (BALL_DIAMETER / 2), finalTop: targetY - (BALL_DIAMETER / 2) };
+            const animationTarget = { finalLeft: finalX - (BALL_DIAMETER / 2), finalTop: finalY - (BALL_DIAMETER / 2) };
 
             createPitchAnimation(animationTarget, pitchTypeInfo);
             elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
             
             const szRect = getStrikeZoneRect();
             const ballRadius = FINAL_BALL_DIAMETER / 2;
-            const isStrikeLocation = !( (targetX + ballRadius) < szRect.left || (targetX - ballRadius) > szRect.right || (targetY + ballRadius) < szRect.top || (targetY - ballRadius) > szRect.bottom );
+            const isStrikeLocation = !( (finalX + ballRadius) < szRect.left || (finalX - ballRadius) > szRect.right || (finalY + ballRadius) < szRect.top || (finalY - ballRadius) > szRect.bottom );
 
-            const pitchData = { centerX: targetX, centerY: targetY, isStrikeLocation, pitchTypeInfo, speed };
+            const pitchData = { centerX: finalX, centerY: finalY, isStrikeLocation, pitchTypeInfo, speed };
             
             setTimeout(() => {
                 aiBatterSwingLogic(pitchData);
