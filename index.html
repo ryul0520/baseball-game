@@ -20,7 +20,7 @@
             margin: 0;
             overflow: hidden;
         }
-        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen {
+        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen, #tutorial-selection-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -38,14 +38,14 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #game-over-screen, #playball-overlay {
+        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #game-over-screen, #playball-overlay, #tutorial-selection-screen {
              display: none;
         }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen { z-index: 199; }
+        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #tutorial-selection-screen { z-index: 199; }
         #game-over-screen { z-index: 150; }
         #playball-overlay { z-index: 101; }
 
-        #game-title, #difficulty-title, #game-result-title, #inning-title, #playstyle-title {
+        #game-title, #difficulty-title, #game-result-title, #inning-title, #playstyle-title, #tutorial-selection-title {
             font-size: 4rem;
             font-weight: bold;
             text-shadow: 3px 3px 6px #000;
@@ -56,8 +56,15 @@
         
         #final-score-display {
             font-size: 2.5rem;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             font-weight: bold;
+        }
+        #final-difficulty-display {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-style: italic;
+            opacity: 0.9;
+            text-transform: capitalize;
         }
         #final-scoreboard-container {
             background-color: rgba(255,255,255,0.9);
@@ -84,22 +91,22 @@
         #final-scoreboard-container .scoreboard-row { color: #333; }
         #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
 
-        #difficulty-buttons, #inning-buttons, #playstyle-buttons {
+        #difficulty-buttons, #inning-buttons, #playstyle-buttons, #tutorial-selection-buttons {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button, .playstyle-button {
+        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button, .playstyle-button, .tutorial-select-button {
              padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
             color: #000; background-color: #fff; border: 2px solid #000;
             border-radius: 5px; cursor: pointer; transition: all 0.3s;
             width: 350px;
             text-align: center;
         }
-        #game-start-button, .difficulty-button, .inning-button, #tutorial-button {
+        #game-start-button, .difficulty-button, .inning-button, #tutorial-button, .tutorial-select-button {
             width: 250px;
         }
-        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover, .playstyle-button:hover {
+        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover, .playstyle-button:hover, .tutorial-select-button:hover {
             background-color: #000;
             color: #fff;
         }
@@ -420,6 +427,13 @@
             <button class="difficulty-button" data-difficulty="extreme">EXTREME</button>
         </div>
     </div>
+    <div id="tutorial-selection-screen">
+        <h1 id="tutorial-selection-title">SELECT TUTORIAL</h1>
+        <div id="tutorial-selection-buttons">
+            <button class="tutorial-select-button" data-tutorial="batting">BATTING TUTORIAL</button>
+            <button class="tutorial-select-button" data-tutorial="pitching">PITCHING TUTORIAL</button>
+        </div>
+    </div>
     <div id="inning-selection-screen">
         <h1 id="inning-title">SELECT INNINGS</h1>
         <div id="inning-buttons">
@@ -438,6 +452,7 @@
     <div id="game-over-screen">
         <h1 id="game-result-title">GAME OVER</h1>
         <div id="final-score-display">AWAY 0 : 0 HOME</div>
+        <div id="final-difficulty-display"></div>
         <div id="final-scoreboard-container"></div>
         <button id="play-again-button">다시하기</button>
     </div>
@@ -516,12 +531,15 @@
             playstyleSelectionScreen: document.getElementById('playstyle-selection-screen'),
             playstyleButtons: document.querySelectorAll('.playstyle-button'),
             tutorialButton: document.getElementById('tutorial-button'),
+            tutorialSelectionScreen: document.getElementById('tutorial-selection-screen'),
+            tutorialSelectButtons: document.querySelectorAll('.tutorial-select-button'),
             tutorialOverlay: document.getElementById('tutorial-overlay'),
             tutorialMessage: document.getElementById('tutorial-message'),
             tutorialNextButton: document.getElementById('tutorial-next-button'),
             gameOverScreen: document.getElementById('game-over-screen'),
             gameResultTitle: document.getElementById('game-result-title'),
             finalScoreDisplay: document.getElementById('final-score-display'),
+            finalDifficultyDisplay: document.getElementById('final-difficulty-display'),
             finalScoreboardContainer: document.getElementById('final-scoreboard-container'),
             playAgainButton: document.getElementById('play-again-button'),
             gameContainer: document.querySelector('.game-container'),
@@ -859,7 +877,7 @@
                         atBatEnded = true;
                         goToNextBatter();
                     } else {
-                        displayText = result.subType === 'SWING_AND_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
+                        displayText = result.subType === 'SWING_AND_A_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
                     }
                     break;
                 case 'BALL':
@@ -1070,6 +1088,7 @@
             
             elements.gameResultTitle.textContent = resultMessage;
             elements.finalScoreDisplay.textContent = `AWAY ${awayScore} : ${homeScore} HOME`;
+            elements.finalDifficultyDisplay.textContent = `Difficulty: ${currentDifficulty}`; // [NEW] Display difficulty
             
             elements.finalScoreboardContainer.innerHTML = ''; 
             const finalBoardWrapper = document.createElement('div');
@@ -1280,81 +1299,6 @@
         
         // --- Pitching & Auto-Simulate Functions ---
         
-        function autoPitchLoop() {
-            if (!isGameActive || gameState.half !== 'Top' || gameState.isPitching) return;
-            
-            if (gameState.bso.o >= 3) {
-                setTimeout(() => { if (isGameActive) changeInning(); }, 1500);
-                return;
-            }
-            
-            gameState.isPitching = true;
-            resetBallPosition();
-            elements.strikeZone.style.opacity = '0';
-            elements.animationStyle.innerHTML = '';
-
-            setTimeout(() => { 
-                if (!isGameActive) { gameState.isPitching = false; return; }
-
-                const pitchData = decidePitchPath();
-                const animationDuration = calculateAnimationDuration(pitchData.speed);
-                const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
-
-                createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
-                elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
-                
-                let wasHit = false;
-
-                setTimeout(() => { 
-                    if (!isGameActive) { gameState.isPitching = false; return; }
-                    
-                    let result;
-                    const swingChance = pitchData.isStrikeLocation ? AI_BATTING_SETTINGS.swingChanceStrike : AI_BATTING_SETTINGS.swingChanceBall;
-
-                    if (Math.random() < swingChance) {
-                        if (Math.random() < AI_BATTING_SETTINGS.contactChance) {
-                            result = decideBattedBallResult(0, true);
-                            wasHit = (result.type !== 'FOUL');
-                        } else {
-                            result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                        }
-                    } else {
-                        result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
-                    }
-                    
-                    const processNextAIStep = (atBatEnded) => {
-                        gameState.isPitching = false;
-                        const delay = atBatEnded ? 1200 : 600;
-                        setTimeout(() => {
-                            if (atBatEnded && gameState.bso.o < 3) {
-                                 elements.pitchResult.textContent = 'Next Batter';
-                            }
-                            autoPitchLoop();
-                        }, delay);
-                    };
-
-                    if (wasHit || result.type === 'FOUL') {
-                        elements.strikeZone.classList.add('strike-hit');
-                        animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
-                            elements.strikeZone.classList.remove('strike-hit');
-                            const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                            processNextAIStep(atBatEnded);
-                        });
-                    } else {
-                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        processNextAIStep(atBatEnded);
-                    }
-
-                }, animationDuration + 250);
-
-                 setTimeout(() => {
-                    if (!isGameActive) return;
-                    elements.strikeZone.style.opacity = '1';
-                }, animationDuration + 500);
-
-            }, 600);
-        }
-
         function prepareForManualPitch() {
             if (gameState.bso.o >= 3) {
                  setTimeout(() => { if(isGameActive) changeInning() }, 1500);
@@ -1546,7 +1490,11 @@
                 button.addEventListener('click', () => {
                     if (gameState.isPitching) return;
                     selectedPitchType = button.dataset.pitchType;
-                    elements.pitchingPrompt.textContent = 'Click on the field to choose a location.';
+                    if(isTutorialActive) {
+                         runPitchingPractice();
+                    } else {
+                        elements.pitchingPrompt.textContent = 'Click on the field to choose a location.';
+                    }
                 });
             });
             
@@ -1574,67 +1522,59 @@
                 setTimeout(() => {
                     elements.difficultyScreen.style.display = 'none';
                     elements.difficultyScreen.style.animation = '';
-                    startTutorial();
+                    elements.tutorialSelectionScreen.style.display = 'flex';
                 }, 500);
+            });
+
+            elements.tutorialSelectButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const type = button.dataset.tutorial;
+                    elements.tutorialSelectionScreen.style.animation = 'fadeOutScreen 0.5s forwards';
+                    setTimeout(() => {
+                        elements.tutorialSelectionScreen.style.display = 'none';
+                        elements.tutorialSelectionScreen.style.animation = '';
+                        if (type === 'batting') {
+                            startBattingTutorial();
+                        } else {
+                            startPitchingTutorial();
+                        }
+                    }, 500);
+                });
             });
             
             updateUI();
         }
         init();
 
-        // --- 튜토리얼 관련 함수 ---
-        let tutorialPitchCount = 0;
-        const totalTutorialPitches = 5;
-        const tutorialMessages = [
+        // --- Batting Tutorial Functions ---
+        let battingTutorialCount = 0;
+        const totalBattingTutorialPitches = 5;
+        const battingTutorialMessages = [
             "Welcome to the Batting Tutorial!\nLet's learn how to hit.",
             "A pitch will be thrown from the center.\nYour goal is to click the ball right as it enters the strike zone (the dotted box).",
-            `You will get ${totalTutorialPitches} practice pitches.\nLet's start!`,
+            `You will get ${totalBattingTutorialPitches} practice pitches.\nLet's start!`,
             "Great! Let's try again.",
             "Tutorial complete!\nYou're ready for a real game."
         ];
 
-        function startTutorial() {
+        function startBattingTutorial() {
             isTutorialActive = true;
             elements.gameContainer.style.display = 'block';
             elements.gameContainer.classList.add('tutorial-mode');
             elements.tutorialOverlay.style.display = 'flex';
-            tutorialPitchCount = 0;
+            battingTutorialCount = 0;
             currentTutorialStep = 0;
-            showTutorialStep(currentTutorialStep);
+            showTutorialStep(battingTutorialMessages, currentTutorialStep);
         }
-
-        function showTutorialStep(stepIndex) {
-            elements.tutorialMessage.textContent = tutorialMessages[stepIndex];
-            elements.tutorialNextButton.textContent = "NEXT";
-            
-            if (stepIndex === 2) { 
-                elements.tutorialNextButton.textContent = "START BATTING PRACTICE";
-            } else if (stepIndex >= tutorialMessages.length -1) { 
-                elements.tutorialNextButton.textContent = "FINISH";
-            }
-        }
-
-        elements.tutorialNextButton.addEventListener('click', () => {
-            currentTutorialStep++;
-
-            if (currentTutorialStep === tutorialMessages.length - 2) { 
-                 elements.tutorialOverlay.style.display = 'none';
-                 runTutorialPitch();
-            } else if (currentTutorialStep >= tutorialMessages.length) { 
-                endTutorial();
-            } else {
-                showTutorialStep(currentTutorialStep);
-            }
-        });
-
-        function runTutorialPitch() {
-            if (tutorialPitchCount >= totalTutorialPitches) {
+        
+        function runBattingPractice() {
+            if (battingTutorialCount >= totalBattingTutorialPitches) {
                 elements.tutorialOverlay.style.display = 'flex';
-                showTutorialStep(tutorialMessages.length - 1);
+                showTutorialStep(battingTutorialMessages, battingTutorialMessages.length - 1);
                 return;
             }
-            tutorialPitchCount++;
-            elements.pitchResult.textContent = `PRACTICE SWING: ${tutorialPitchCount} / ${totalTutorialPitches}`;
+            battingTutorialCount++;
+            elements.pitchResult.textContent = `PRACTICE SWING: ${battingTutorialCount} / ${totalBattingTutorialPitches}`;
             
             resetBallPosition();
             elements.animationStyle.innerHTML = ''; 
@@ -1658,17 +1598,122 @@
             const tutorialSwingHandler = () => {
                 elements.field.removeEventListener('click', tutorialSwingHandler);
                 animateBattedBall({type:'HIT', value: 1}, {x: pitchData.centerX, y: pitchData.centerY}, () => {
-                    setTimeout(runTutorialPitch, 1000); 
+                    setTimeout(runBattingPractice, 1000); 
                 });
             };
             elements.field.addEventListener('click', tutorialSwingHandler);
         }
 
+        // --- Pitching Tutorial Functions ---
+        let pitchingTutorialCount = 0;
+        const totalPitchingTutorialPitches = 5;
+        const pitchingTutorialMessages = [
+            "Welcome to the Pitching Tutorial!\nLet's learn how to pitch.",
+            "First, select a pitch type from the buttons below.",
+            "Now, click inside the dotted strike zone to aim your pitch.",
+            `Good pitch! Let's try that again. You have ${totalPitchingTutorialPitches - 1} more practice pitches.`,
+            "Tutorial complete! You're ready to take the mound."
+        ];
+        
+        let tutorialPitchLocationHandler = null;
+
+        function startPitchingTutorial() {
+            isTutorialActive = true;
+            elements.gameContainer.style.display = 'block';
+            elements.gameContainer.classList.add('tutorial-mode');
+            elements.pitchingControls.style.display = 'flex';
+            elements.pitchTypeButtons.style.display = 'flex';
+            elements.tutorialOverlay.style.display = 'flex';
+            pitchingTutorialCount = 0;
+            currentTutorialStep = 0;
+            showTutorialStep(pitchingTutorialMessages, currentTutorialStep);
+        }
+        
+        function runPitchingPractice() {
+            if (pitchingTutorialCount >= totalPitchingTutorialPitches) {
+                 elements.tutorialOverlay.style.display = 'flex';
+                 showTutorialStep(pitchingTutorialMessages, pitchingTutorialMessages.length - 1);
+                return;
+            }
+
+            const promptStep = (selectedPitchType === null) ? 1 : 2;
+            const remainingPitches = totalPitchingTutorialPitches - pitchingTutorialCount;
+            pitchingTutorialMessages[3] = `Good pitch! Let's try that again. You have ${remainingPitches - 1} more practice pitches.`;
+            showTutorialStep(pitchingTutorialMessages, promptStep);
+            
+            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
+            
+            if(tutorialPitchLocationHandler) {
+                 elements.field.removeEventListener('click', tutorialPitchLocationHandler);
+            }
+
+            tutorialPitchLocationHandler = (e) => {
+                 if (!isTutorialActive || !selectedPitchType) return;
+                
+                elements.field.removeEventListener('click', tutorialPitchLocationHandler);
+                Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = true);
+
+                const fieldRect = elements.field.getBoundingClientRect();
+                const targetX = e.clientX - fieldRect.left;
+                const targetY = e.clientY - fieldRect.top;
+
+                const pitchTypeInfo = PITCH_TYPES[selectedPitchType];
+                const animationDuration = 500;
+                const animationTarget = { finalLeft: targetX - (BALL_DIAMETER / 2), finalTop: targetY - (BALL_DIAMETER / 2) };
+                
+                resetBallPosition();
+                createPitchAnimation(animationTarget, pitchTypeInfo);
+                elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
+                
+                setTimeout(() => {
+                    pitchingTutorialCount++;
+                    selectedPitchType = null;
+                    elements.pitchResult.textContent = `PRACTICE PITCH: ${pitchingTutorialCount} / ${totalPitchingTutorialPitches}`;
+                    runPitchingPractice();
+                }, animationDuration + 500);
+            };
+            
+            elements.field.addEventListener('click', tutorialPitchLocationHandler);
+        }
+
+
+        // --- General Tutorial Functions ---
+        let currentTutorialStep = 0;
+        
+        function showTutorialStep(messages, stepIndex) {
+            currentTutorialStep = stepIndex;
+            elements.tutorialMessage.textContent = messages[stepIndex];
+            elements.tutorialNextButton.textContent = (stepIndex < messages.length -1) ? "NEXT" : "FINISH";
+        }
+
+        elements.tutorialNextButton.addEventListener('click', () => {
+            const isBattingTute = elements.tutorialMessage.textContent.includes('Batting');
+            const currentMessages = isBattingTute ? battingTutorialMessages : pitchingTutorialMessages;
+            currentTutorialStep++;
+            
+            if (currentTutorialStep === 1 && !isBattingTute) {
+                 elements.tutorialOverlay.style.display = 'none';
+                 runPitchingPractice();
+            } else if (currentTutorialStep === 2 && isBattingTute) {
+                 elements.tutorialOverlay.style.display = 'none';
+                 runBattingPractice();
+            } else if (currentTutorialStep >= currentMessages.length) { 
+                endTutorial();
+            } else {
+                showTutorialStep(currentMessages, currentTutorialStep);
+            }
+        });
+
         function endTutorial() {
             isTutorialActive = false;
+            if(tutorialPitchLocationHandler) {
+                 elements.field.removeEventListener('click', tutorialPitchLocationHandler);
+                 tutorialPitchLocationHandler = null;
+            }
             elements.gameContainer.style.display = 'none';
             elements.gameContainer.classList.remove('tutorial-mode');
             elements.tutorialOverlay.style.display = 'none';
+            elements.pitchingControls.style.display = 'none';
             resetGame();
         }
     });
