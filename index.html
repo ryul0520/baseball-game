@@ -608,13 +608,12 @@
             hard:    { speedModifier: 0,   durationModifier: 0.95 },
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
-
-        // 난이도별 AI 타격 능력치 설정
+        
         const AI_DIFFICULTY_BATTING_SETTINGS = {
-            easy:    { swingChanceStrike: 0.75, swingChanceBall: 0.30, contactChance: 0.70, foulChance: 0.30, hitQualityModifier: -0.05 },
-            normal:  { swingChanceStrike: 0.90, swingChanceBall: 0.15, contactChance: 0.90, foulChance: 0.22, hitQualityModifier: 0 },
-            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.08, contactChance: 0.95, foulChance: 0.18, hitQualityModifier: 0.10 },
-            extreme: { swingChanceStrike: 0.99, swingChanceBall: 0.03, contactChance: 0.98, foulChance: 0.15, hitQualityModifier: 0.20 }
+            easy:    { swingChanceStrike: 0.75, swingChanceBall: 0.30, contactChance: 0.70, foulChance: 0.30, hitQualityModifier: -0.05, outChance: 0.65 },
+            normal:  { swingChanceStrike: 0.90, swingChanceBall: 0.15, contactChance: 0.90, foulChance: 0.22, hitQualityModifier: 0,      outChance: 0.60 },
+            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.08, contactChance: 0.95, foulChance: 0.18, hitQualityModifier: 0.10,  outChance: 0.52 },
+            extreme: { swingChanceStrike: 0.99, swingChanceBall: 0.03, contactChance: 0.98, foulChance: 0.15, hitQualityModifier: 0.20,  outChance: 0.45 }
         };
         
         let currentDifficulty = 'normal';
@@ -665,17 +664,16 @@
             return rect;
         }
 
-        // AI 타격 능력치 반영하도록 수정
         function decideBattedBallResult(distanceFromCenter, aiSettings = null) {
             const isAI = !!aiSettings;
+            const outChance = isAI ? aiSettings.outChance : 0.60;
+            const foulChance = isAI ? aiSettings.foulChance : 0.08;
             let baseRand = Math.random() - (isAI ? aiSettings.hitQualityModifier : 0);
             let penalty = distanceFromCenter / 100;
-            baseRand += penalty * 0.5; 
-            
-            const foulChance = isAI ? aiSettings.foulChance : 0.08;
+            baseRand += penalty * 0.5;
 
             if (baseRand < foulChance) return { type: 'FOUL' };
-            else if (baseRand < (foulChance + 0.60)) {
+            else if (baseRand < (foulChance + outChance)) {
                 const outRand = Math.random();
                 if (outRand < 0.45) return { type: 'OUT', subType: 'FLY' };
                 if (outRand < 0.80) return { type: 'OUT', subType: 'GROUND' };
@@ -1363,6 +1361,9 @@
                  return;
             }
             
+            // BUG FIX: 수동 피칭 턴이 시작될 때 항상 버튼을 활성화하도록 수정
+            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
+            
             gameState.isPitching = false;
             selectedPitchType = null;
             elements.pitchingPrompt.textContent = 'Select a pitch type.';
@@ -1423,7 +1424,6 @@
                     return;
                 }
                 
-                Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
                 prepareForManualPitch();
             };
             
