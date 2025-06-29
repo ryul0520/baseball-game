@@ -274,6 +274,13 @@
         }
 
         .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
+        #batter-info {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            height: 20px;
+        }
         #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
         #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
         .counts { display: flex; justify-content: space-around; align-items: center; }
@@ -408,6 +415,7 @@
         <button id="pitch-button" style="display: none;">START PITCH</button>
     </div>
     <div class="bso-board">
+        <div id="batter-info"></div>
         <div id="pitch-result">PLAY BALL!</div>
         <div id="pitch-info"></div>
         <div class="counts">
@@ -451,6 +459,7 @@
             scoreEffect: document.getElementById('score-effect'),
             pitchResult: document.getElementById('pitch-result'),
             pitchInfo: document.getElementById('pitch-info'), 
+            batterInfo: document.getElementById('batter-info'),
             ballDots: document.getElementById('ball-dots'),
             strikeDots: document.getElementById('strike-dots'), 
             outDots: document.getElementById('out-dots'),
@@ -459,6 +468,8 @@
             animationStyle: document.getElementById('pitch-animation-style')
         };
         
+        const createBatterStats = () => Array(9).fill(null).map(() => ({ atBats: 0, hits: 0 }));
+
         const getInitialGameState = () => ({
             isPitching: false, inning: 1, half: 'Top', 
             bso: { b: 0, s: 0, o: 0 }, 
@@ -466,6 +477,14 @@
             teams: { 
                 away: { name: 'AWAY', inningScores: Array(12).fill(null), R: 0, H: 0, E: 0, BB: 0 }, 
                 home: { name: 'HOME', inningScores: Array(12).fill(null), R: 0, H: 0, E: 0, BB: 0 } 
+            },
+            batterStats: {
+                away: createBatterStats(),
+                home: createBatterStats()
+            },
+            currentBatterIndex: {
+                away: 0,
+                home: 0
             },
             regularInnings: 9, 
             maxInnings: 12
@@ -675,9 +694,7 @@
                         const distance = Math.sqrt(Math.pow(clickX - pitchData.centerX, 2) + Math.pow(clickY - pitchData.centerY, 2));
                         
                         if (distance <= SOLID_CONTACT_THRESHOLD) {
-                            const szRect = getStrikeZoneRect();
-                            const distFromCenter = Math.sqrt(Math.pow(pitchData.centerX - (szRect.left + szRect.width / 2), 2) + Math.pow(pitchData.centerY - (szRect.top + szRect.height / 2), 2));
-                            result = decideBattedBallResult(distFromCenter, false);
+                            result = decideBattedBallResult(0, false);
                         } else if (distance <= FOUL_THRESHOLD) {
                             result = { type: 'FOUL' };
                         } else {
@@ -690,10 +707,12 @@
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
                             elements.strikeZone.classList.remove('strike-hit');
+                            if (atBatEnded) goToNextBatter();
                             if (onCompletion) onCompletion(atBatEnded);
                         });
                     } else {
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        if (atBatEnded) goToNextBatter();
                         if (onCompletion) onCompletion(atBatEnded);
                     }
                 };
@@ -707,9 +726,9 @@
                         elements.field.removeEventListener('click', swingListener);
                     }
                     if (!hasSwung) {
-                        // [REMOVED] 힛 바이 피치 발생 로직 제거
                         let result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED'};
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        if (atBatEnded) goToNextBatter();
                         if (onCompletion) onCompletion(atBatEnded);
                     }
                 }, animationDuration + 250);
@@ -740,9 +759,14 @@
         
         function handlePitchResult(result, pitchTypeInfo, speed) {
             if (!isGameActive && !isTutorialActive) return false;
-            const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
+            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
+            const currentTeam = gameState.teams[teamSide];
+            const batter = gameState.batterStats[teamSide][gameState.currentBatterIndex[teamSide]];
+
             let displayText = '';
             let atBatEnded = false;
+            let isSacFly = false;
+
             elements.pitchInfo.textContent = `${pitchTypeInfo.name} - ${Math.round(speed)} km/h`;
 
             switch (result.type) {
@@ -751,6 +775,7 @@
                     if (gameState.bso.s >= 3) {
                         displayText = result.subType === 'SWING_AND_MISS' ? 'SWINGING STRIKEOUT' : 'STRIKEOUT!';
                         gameState.bso.o++;
+                        batter.atBats++;
                         resetBSCount();
                         atBatEnded = true;
                     } else {
@@ -761,7 +786,7 @@
                     gameState.bso.b++;
                     if (gameState.bso.b >= 4) {
                         displayText = 'WALK';
-                        gameState.teams[currentTeam].BB++;
+                        currentTeam.BB++;
                         handleAdvancement({ bases: 1, isWalk: true });
                         resetBSCount();
                         atBatEnded = true;
@@ -769,7 +794,6 @@
                         displayText = 'BALL';
                     }
                     break;
-                // [REMOVED] 힛 바이 피치 처리 case 제거
                 case 'FOUL':
                     displayText = 'FOUL';
                     if (gameState.bso.s < 2) {
@@ -779,20 +803,23 @@
                     break;
                 case 'OUT':
                     const outsBeforePlay = gameState.bso.o;
-
+                    
                     if (outsBeforePlay < 2 && result.subType === 'GROUND' && gameState.runners[0] && Math.random() < 0.55) {
                         displayText = 'DOUBLE PLAY!';
                         gameState.bso.o += 2;
+                        batter.atBats++;
                         handleAdvancement({ groundOutType: 'doublePlay' });
                     } else {
                         gameState.bso.o++;
                         
                         if (gameState.bso.o >= 3) {
+                             batter.atBats++;
                             displayText = result.subType === 'FLY' ? 'FLY OUT' : (result.subType === 'GROUND' ? 'GROUND OUT' : 'LINE DRIVE OUT');
                         } else {
                             if (result.subType === 'FLY') {
                                 if (gameState.runners[2]) {
                                     displayText = 'SACRIFICE FLY';
+                                    isSacFly = true; 
                                     handleAdvancement({ isSacFly: true });
                                 } else {
                                     displayText = 'FLY OUT';
@@ -808,6 +835,7 @@
                             } else {
                                 displayText = 'LINE DRIVE OUT';
                             }
+                            if(!isSacFly) batter.atBats++;
                         }
                     }
                     
@@ -815,7 +843,9 @@
                     atBatEnded = true;
                     break;
                 case 'HIT':
-                    gameState.teams[currentTeam].H++;
+                    currentTeam.H++;
+                    batter.atBats++;
+                    batter.hits++;
                     displayText = result.value === 4 ? 'HOME RUN!' : (result.value === 1 ? 'SINGLE!' : 'DOUBLE!');
                     handleAdvancement({ bases: result.value });
                     resetBSCount();
@@ -876,10 +906,12 @@
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             elements.strikeZone.classList.remove('strike-hit');
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                            if (atBatEnded) goToNextBatter();
                             finishAITurn(atBatEnded);
                         });
                     } else {
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        if (atBatEnded) goToNextBatter();
                         finishAITurn(atBatEnded);
                     }
 
@@ -903,6 +935,12 @@
                 autoPitchLoop();
             }, delay);
         }
+        
+        function goToNextBatter() {
+            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
+            gameState.currentBatterIndex[teamSide] = (gameState.currentBatterIndex[teamSide] + 1) % 9;
+            updateBatterInfo();
+        }
 
         function showTurnMessage(message, callback) {
             elements.turnMessage.textContent = message;
@@ -920,6 +958,7 @@
         function startGameTurn() {
             if (!isGameActive) return;
             elements.pitchButton.style.display = 'none';
+            updateBatterInfo();
 
             if (gameState.half === 'Top') {
                 showTurnMessage("AI TURN", autoPitchLoop);
@@ -1051,6 +1090,7 @@
 
             elements.pitchResult.textContent = 'PLAY BALL!';
             elements.pitchInfo.textContent = '';
+            elements.batterInfo.textContent = '';
             
             updateUI(); 
         }
@@ -1073,9 +1113,9 @@
             const newRunners = [false, false, false];
 
             if (isSacFly) {
-                runsScored++;
-                newRunners[0] = originalRunners[0];
-                newRunners[1] = originalRunners[1];
+                if (originalRunners[2]) runsScored++;
+                if (originalRunners[1]) newRunners[2] = true;
+                if (originalRunners[0]) newRunners[1] = true;
             } else if (groundOutType) {
                 switch (groundOutType) {
                     case 'simple':
@@ -1193,13 +1233,21 @@
                 elements.fullScoreboard.appendChild(row);
             });
         }
+        
+        function updateBatterInfo() {
+            if (!isGameActive) return;
+            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
+            const batterIndex = gameState.currentBatterIndex[teamSide];
+            const batter = gameState.batterStats[teamSide][batterIndex];
+            elements.batterInfo.textContent = `${batterIndex + 1}번 타자 (${batter.atBats}타수 ${batter.hits}안타)`;
+        }
 
         function resetBallPosition() {
             elements.ball.style.animation = ''; elements.ball.style.top = `calc(20% - ${BALL_DIAMETER / 2}px)`;
             elements.ball.style.left = `calc(50% - ${BALL_DIAMETER / 2}px)`; elements.ball.style.transform = 'scale(1)';
             elements.ball.offsetHeight;
         }
-        function updateUI() { updateBSODots(); gameState.runners.forEach((hasRunner, i) => elements.bases[i].classList.toggle('runner-on', hasRunner)); updateFullScoreboard(); }
+        function updateUI() { updateBSODots(); gameState.runners.forEach((hasRunner, i) => elements.bases[i].classList.toggle('runner-on', hasRunner)); updateFullScoreboard(); updateBatterInfo(); }
         
         function init() { 
             initBSODots(); 
