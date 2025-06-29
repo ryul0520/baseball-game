@@ -1361,18 +1361,15 @@
                  return;
             }
             
-            // BUG FIX: 수동 피칭 턴이 시작될 때 항상 버튼을 활성화하도록 수정
             Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
             
             gameState.isPitching = false;
             selectedPitchType = null;
             elements.pitchingPrompt.textContent = 'Select a pitch type.';
+            
+            // BUG FIX: 스트라이크 존을 표시하고, 타이머로 숨기지 않도록 수정했습니다.
+            // 이제 스트라이크 존은 플레이어가 투구 위치를 클릭할 때만 사라집니다.
             elements.strikeZone.style.opacity = '1';
-            setTimeout(() => {
-                if (!gameState.isPitching) {
-                   elements.strikeZone.style.opacity = '0';
-                }
-            }, 2000);
         }
 
         function handlePlayerPitching(targetX, targetY) {
@@ -1383,6 +1380,7 @@
             elements.pitchingPrompt.textContent = '';
             
             resetBallPosition();
+            // BUG FIX: 투구를 시작할 때 스트라이크 존을 여기서 숨깁니다.
             elements.strikeZone.style.opacity = '0'; 
             elements.animationStyle.innerHTML = '';
 
