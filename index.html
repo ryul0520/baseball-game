@@ -20,7 +20,7 @@
             margin: 0;
             overflow: hidden;
         }
-        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen, #tutorial-selection-screen {
+        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen {
             position: absolute;
             top: 0;
             left: 0;
@@ -38,379 +38,379 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #game-over-screen, #playball-overlay, #tutorial-selection-screen {
+        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #game-over-screen, #playball-overlay {
              display: none;
         }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #tutorial-selection-screen { z-index: 199; }
+        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen { z-index: 199; }
         #game-over-screen { z-index: 150; }
         #playball-overlay { z-index: 101; }
 
-        #game-title, #difficulty-title, #game-result-title, #inning-title, #playstyle-title, #tutorial-selection-title {
-            font-size: 4rem;
-            font-weight: bold;
-            text-shadow: 3px 3px 6px #000;
-            margin-bottom: 20px;
-        }
-        #game-result-title.win { color: #4ecca3; }
-        #game-result-title.lose { color: #ff6b6b; }
-        
-        #final-score-display {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-        #final-difficulty-display {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            font-style: italic;
-            opacity: 0.9;
-            text-transform: capitalize;
-        }
-        #final-scoreboard-container {
-            background-color: rgba(255,255,255,0.9);
-            border-radius: 5px;
-            padding: 15px;
-            width: 100%;
-            max-width: 550px;
-            color: #000;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        
-        .result-indicator {
-            font-size: 0.7rem;
-            font-weight: bold;
-            margin-left: 8px;
-            padding: 2px 5px;
-            border-radius: 3px;
-            color: white;
-        }
-        .result-win { background-color: #3498db; }
-        .result-lose { background-color: #e74c3c; }
+#game-title, #difficulty-title, #game-result-title, #inning-title, #playstyle-title {
+        font-size: 4rem;
+        font-weight: bold;
+        text-shadow: 3px 3px 6px #000;
+        margin-bottom: 20px;
+    }
+    #game-result-title.win { color: #4ecca3; }
+    #game-result-title.lose { color: #ff6b6b; }
+    
+    #final-score-display {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    #final-difficulty-display {
+        font-size: 1.1rem;
+        color: #d1d1d1;
+        margin-bottom: 25px;
+        text-transform: capitalize;
+        font-weight: 500;
+    }
+    #final-scoreboard-container {
+        background-color: rgba(255,255,255,0.9);
+        border-radius: 5px;
+        padding: 15px;
+        width: 100%;
+        max-width: 550px;
+        color: #000;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    
+    .result-indicator {
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-left: 8px;
+        padding: 2px 5px;
+        border-radius: 3px;
+        color: white;
+    }
+    .result-win { background-color: #3498db; }
+    .result-lose { background-color: #e74c3c; }
 
-        #final-scoreboard-container .scoreboard-row { color: #333; }
-        #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
+    #final-scoreboard-container .scoreboard-row { color: #333; }
+    #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
 
-        #difficulty-buttons, #inning-buttons, #playstyle-buttons, #tutorial-selection-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button, .playstyle-button, .tutorial-select-button {
-             padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
-            color: #000; background-color: #fff; border: 2px solid #000;
-            border-radius: 5px; cursor: pointer; transition: all 0.3s;
-            width: 350px;
-            text-align: center;
-        }
-        #game-start-button, .difficulty-button, .inning-button, #tutorial-button, .tutorial-select-button {
-            width: 250px;
-        }
-        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover, .playstyle-button:hover, .tutorial-select-button:hover {
-            background-color: #000;
-            color: #fff;
-        }
-        #tutorial-button {
-            margin-bottom: 20px;
-            background-color: #f1c40f;
-            border-color: #f39c12;
-        }
-        #tutorial-button:hover {
-             background-color: #f39c12;
-             color: #fff;
-        }
+    #difficulty-buttons, #inning-buttons, #playstyle-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button, .playstyle-button {
+         padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
+        color: #000; background-color: #fff; border: 2px solid #000;
+        border-radius: 5px; cursor: pointer; transition: all 0.3s;
+        width: 350px;
+        text-align: center;
+    }
+    #game-start-button, .difficulty-button, .inning-button, #tutorial-button {
+        width: 250px;
+    }
+    #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover, .playstyle-button:hover {
+        background-color: #000;
+        color: #fff;
+    }
+    #tutorial-button {
+        margin-bottom: 20px;
+        background-color: #f1c40f;
+        border-color: #f39c12;
+    }
+    #tutorial-button:hover {
+         background-color: #f39c12;
+         color: #fff;
+    }
 
-        #initial-playball-button {
-            font-size: 2.5rem; padding: 20px 60px; width: auto;
-            border: 3px solid #fff; background-color: rgba(0,0,0,0.5);
-            color: #fff; text-shadow: 2px 2px 4px #000;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5); text-transform: uppercase;
-        }
-        #initial-playball-button:hover {
-            background-color: rgba(255,255,255,1); color: #000;
-            border-color: #000; text-shadow: none;
-        }
+    #initial-playball-button {
+        font-size: 2.5rem; padding: 20px 60px; width: auto;
+        border: 3px solid #fff; background-color: rgba(0,0,0,0.5);
+        color: #fff; text-shadow: 2px 2px 4px #000;
+        box-shadow: 0 0 20px rgba(255,255,255,0.5); text-transform: uppercase;
+    }
+    #initial-playball-button:hover {
+        background-color: rgba(255,255,255,1); color: #000;
+        border-color: #000; text-shadow: none;
+    }
 
-        @keyframes fadeOutScreen {
-            from { opacity: 1; }
-            to { opacity: 0; pointer-events: none; }
-        }
-        .game-container {
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            border: 1px solid #333;
-            text-align: center;
-            width: 95%;
-            max-width: 600px;
-            display: none;
-            position: relative;
-            z-index: 99;
-        }
-        
-        #full-scoreboard, #final-scoreboard-container #full-scoreboard {
-            border: 1px solid #333;
-            margin-bottom: 10px;
-        }
-        .scoreboard-row {
-            display: grid;
-        }
-        .header-row {
-            font-weight: bold;
-            background-color: #333;
-            color: #fff;
-        }
-        .cell {
-            padding: 4px 1px;
-            border-left: 1px solid #ccc;
-            border-top: 1px solid #ccc;
-            font-size: 0.75rem;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .team-name {
-            font-weight: bold;
-            font-size: 0.8rem;
-            border-left: none;
-            justify-content: flex-start;
-            padding-left: 5px;
-        }
-        .stat-r, .stat-h, .stat-e, .stat-b {
-            font-weight: bold;
-            background-color: #a9a9a9;
-        }
-        #home-row .cell { border-bottom: 1px solid #333; }
-        
-        .header-row .extra-inning {
-            background-color: #2980b9;
-        }
-        
-        #field-container { position: relative; }
-        #bases-diagram {
-            position: absolute; top: 10px; right: 10px;
-            width: 60px; height: 60px; z-index: 10;
-        }
-        .base {
-            position: absolute; width: 15px; height: 15px;
-            background-color: transparent; border: 2px solid #bbb;
-            transform: rotate(45deg); transition: all 0.3s;
-        }
-        #base-2b { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
-        #base-1b { top: 50%; right: 0; transform: translateY(-50%) rotate(45deg); }
-        #base-3b { top: 50%; left: 0; transform: translateY(-50%) rotate(45deg); }
-        .base.runner-on { background-color: #fff; border-color: #000; }
-        #field {
-            width: 100%; height: 350px; background-color: #4a4a4a;
-            border: 3px solid #1a1a1a; position: relative;
-            overflow: hidden; perspective: 500px;
-        }
-        #score-effect {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #ffdd57;
-            text-shadow: 3px 3px 8px rgba(0,0,0,0.8);
-            z-index: 110;
-            pointer-events: none;
-            display: none;
-        }
-        .score-anim {
-            display: block !important;
-            animation: score-animation 1.5s ease-out forwards;
-        }
-        @keyframes score-animation {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            30% { transform: translate(-50%, -60%) scale(1.1); opacity: 1; }
-            50% { transform: translate(-50%, -60%) scale(1); opacity: 1; }
-            100% { transform: translate(-50%, -80%) scale(1); opacity: 0; }
-        }
+    @keyframes fadeOutScreen {
+        from { opacity: 1; }
+        to { opacity: 0; pointer-events: none; }
+    }
+    .game-container {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        border: 1px solid #333;
+        text-align: center;
+        width: 95%;
+        max-width: 600px;
+        display: none;
+        position: relative;
+        z-index: 99;
+    }
+    
+    #full-scoreboard, #final-scoreboard-container #full-scoreboard {
+        border: 1px solid #333;
+        margin-bottom: 10px;
+    }
+    .scoreboard-row {
+        display: grid;
+    }
+    .header-row {
+        font-weight: bold;
+        background-color: #333;
+        color: #fff;
+    }
+    .cell {
+        padding: 4px 1px;
+        border-left: 1px solid #ccc;
+        border-top: 1px solid #ccc;
+        font-size: 0.75rem;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .team-name {
+        font-weight: bold;
+        font-size: 0.8rem;
+        border-left: none;
+        justify-content: flex-start;
+        padding-left: 5px;
+    }
+    .stat-r, .stat-h, .stat-e, .stat-b {
+        font-weight: bold;
+        background-color: #a9a9a9;
+    }
+    #home-row .cell { border-bottom: 1px solid #333; }
+    
+    .header-row .extra-inning {
+        background-color: #2980b9;
+    }
+    
+    #field-container { position: relative; }
+    #bases-diagram {
+        position: absolute; top: 10px; right: 10px;
+        width: 60px; height: 60px; z-index: 10;
+    }
+    .base {
+        position: absolute; width: 15px; height: 15px;
+        background-color: transparent; border: 2px solid #bbb;
+        transform: rotate(45deg); transition: all 0.3s;
+    }
+    #base-2b { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+    #base-1b { top: 50%; right: 0; transform: translateY(-50%) rotate(45deg); }
+    #base-3b { top: 50%; left: 0; transform: translateY(-50%) rotate(45deg); }
+    .base.runner-on { background-color: #fff; border-color: #000; }
+    #field {
+        width: 100%; height: 350px; background-color: #4a4a4a;
+        border: 3px solid #1a1a1a; position: relative;
+        overflow: hidden; perspective: 500px;
+    }
+    #score-effect {
+        position: absolute;
+        top: 45%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3.5rem;
+        font-weight: bold;
+        color: #ffdd57;
+        text-shadow: 3px 3px 8px rgba(0,0,0,0.8);
+        z-index: 110;
+        pointer-events: none;
+        display: none;
+    }
+    .score-anim {
+        display: block !important;
+        animation: score-animation 1.5s ease-out forwards;
+    }
+    @keyframes score-animation {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        30% { transform: translate(-50%, -60%) scale(1.1); opacity: 1; }
+        50% { transform: translate(-50%, -60%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -80%) scale(1); opacity: 0; }
+    }
 
-        #strike-zone {
-            position: absolute; width: var(--sz-width); height: var(--sz-height);
-            border: 2px dotted rgba(255, 255, 255, 0.8);
-            left: var(--sz-left); top: var(--sz-top);
-            box-sizing: border-box; opacity: 1; 
-            transition: opacity 0.5s ease-in-out;
-        }
-        #strike-zone.strike-hit { border-color: #fff; background-color: rgba(255, 255, 255, 0.1); }
-        #home-plate {
-            position: absolute; width: 82px; height: 82px;
-            background-color: #e0e0e0; border: 1px solid #333;
-            bottom: 7px; left: 50%; transform: translateX(-50%);
-            clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 50% 100%, 0% 55%);
-        }
-        #baseball {
-            position: absolute; width: 4.5px; height: 4.5px;
-            background: #fff; border-radius: 50%;
-            top: 20%; left: calc(50% - 2.25px); transform: scale(1);
-        }
-        #pitch-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        .controls { 
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            min-height: 50px;
-        }
-        #pitch-button {
-            padding: 12px 30px; font-size: 1.2rem; font-weight: bold;
-            color: #fff; background-color: #000; border: 2px solid #000;
-            border-radius: 0; cursor: pointer; transition: background-color 0.3s, color 0.3s;
-        }
-        #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
-        #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
-        
-        #pitching-controls {
-            display: none;
-            width: 100%;
-            flex-direction: column;
-            align-items: center;
-        }
-        #pitching-prompt {
-            font-size: 1rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #1a1a1a;
-        }
-        #pitch-type-buttons {
-            display: none;
-            flex-direction: column; 
-            gap: 8px; 
-            align-items: center;
-        }
-        .pitch-button-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .pitch-type-button {
-            padding: 8px 12px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: 2px solid #333;
-            background-color: #fff;
-            transition: all 0.2s;
-            min-width: 80px;
-        }
-        .pitch-type-button:hover:not(:disabled) {
-            background-color: #333;
-            color: #fff;
-        }
-        .pitch-type-button:disabled {
-            background-color: #aaa;
-            color: #eee;
-            cursor: not-allowed;
-        }
+    #strike-zone {
+        position: absolute; width: var(--sz-width); height: var(--sz-height);
+        border: 2px dotted rgba(255, 255, 255, 0.8);
+        left: var(--sz-left); top: var(--sz-top);
+        box-sizing: border-box; opacity: 1; 
+        transition: opacity 0.5s ease-in-out;
+    }
+    #strike-zone.strike-hit { border-color: #fff; background-color: rgba(255, 255, 255, 0.1); }
+    #home-plate {
+        position: absolute; width: 82px; height: 82px;
+        background-color: #e0e0e0; border: 1px solid #333;
+        bottom: 7px; left: 50%; transform: translateX(-50%);
+        clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 50% 100%, 0% 55%);
+    }
+    #baseball {
+        position: absolute; width: 4.5px; height: 4.5px;
+        background: #fff; border-radius: 50%;
+        top: 20%; left: calc(50% - 2.25px); transform: scale(1);
+    }
+    #pitch-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    
+    .controls { 
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        min-height: 50px;
+    }
+    #pitch-button {
+        padding: 12px 30px; font-size: 1.2rem; font-weight: bold;
+        color: #fff; background-color: #000; border: 2px solid #000;
+        border-radius: 0; cursor: pointer; transition: background-color 0.3s, color 0.3s;
+    }
+    #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
+    #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
+    
+    #pitching-controls {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+    }
+    #pitching-prompt {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #1a1a1a;
+    }
+    #pitch-type-buttons {
+        display: none;
+        flex-direction: column; 
+        gap: 8px; 
+        align-items: center;
+    }
+    .pitch-button-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    .pitch-type-button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        cursor: pointer;
+        border: 2px solid #333;
+        background-color: #fff;
+        transition: all 0.2s;
+        min-width: 80px;
+    }
+    .pitch-type-button:hover:not(:disabled) {
+        background-color: #333;
+        color: #fff;
+    }
+    .pitch-type-button:disabled {
+        background-color: #aaa;
+        color: #eee;
+        cursor: not-allowed;
+    }
 
-        #cold-game-button {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            background-color: rgba(192, 57, 43, 0.7);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 4px 8px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 115;
-            transition: background-color 0.3s;
-            display: none;
-        }
-        #cold-game-button:hover {
-            background-color: rgba(169, 50, 38, 0.9);
-        }
+    #cold-game-button {
+        position: absolute;
+        bottom: 15px;
+        right: 15px;
+        background-color: rgba(192, 57, 43, 0.7);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        z-index: 115;
+        transition: background-color 0.3s;
+        display: none;
+    }
+    #cold-game-button:hover {
+        background-color: rgba(169, 50, 38, 0.9);
+    }
 
-        .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
-        #batter-info {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-            height: 20px;
-        }
-        #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
-        #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
-        .counts { display: flex; justify-content: space-around; align-items: center; }
-        .count-display { display: flex; align-items: center; }
-        .count-label { font-size: 1.2rem; font-weight: bold; margin-right: 8px; }
-        .dots { display: flex; gap: 5px; }
-        .dot { width: 16px; height: 16px; border-radius: 50%; background-color: #ccc; transition: background-color 0.3s; }
-        .dot-b.active { background-color: #a3d900; }
-        .dot-s.active { background-color: #f7ce00; }
-        .dot-o.active { background-color: #e53935; }
-        
-        #turn-overlay {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100; opacity: 0; pointer-events: none;
-            animation: fadeOverlay 1.5s;
-        }
-        #turn-message {
-            background-color: #fff; color: #000;
-            padding: 20px 40px; font-size: 2rem; font-weight: bold;
-            border-radius: 5px; border: 2px solid #000;
-        }
-        .tutorial-mode #full-scoreboard,
-        .tutorial-mode .bso-board,
-        .tutorial-mode #bases-diagram,
-        .tutorial-mode .controls,
-        .tutorial-mode #cold-game-button {
-            display: none !important;
-        }
-        #tutorial-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.75);
-            z-index: 120;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        #tutorial-message {
-            font-size: 1.5rem;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            white-space: pre-line;
-        }
-        #tutorial-next-button {
-             padding: 12px 35px; font-size: 1.2rem; font-weight: bold;
-            color: #000; background-color: #f1c40f; border: 2px solid #f39c12;
-            border-radius: 5px; cursor: pointer; transition: all 0.3s;
-        }
-        #tutorial-next-button:hover {
-            background-color: #f39c12; color: #fff;
-        }
-        
-        @keyframes fadeOverlay {
-            0% { opacity: 0; } 25% { opacity: 1; }
-            75% { opacity: 1; } 100% { opacity: 0; }
-        }
-    </style>
-    <style id="pitch-animation-style"></style>
+    .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
+    #batter-info {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+        height: 20px;
+    }
+    #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
+    #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
+    .counts { display: flex; justify-content: space-around; align-items: center; }
+    .count-display { display: flex; align-items: center; }
+    .count-label { font-size: 1.2rem; font-weight: bold; margin-right: 8px; }
+    .dots { display: flex; gap: 5px; }
+    .dot { width: 16px; height: 16px; border-radius: 50%; background-color: #ccc; transition: background-color 0.3s; }
+    .dot-b.active { background-color: #a3d900; }
+    .dot-s.active { background-color: #f7ce00; }
+    .dot-o.active { background-color: #e53935; }
+    
+    #turn-overlay {
+        position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 100; opacity: 0; pointer-events: none;
+        animation: fadeOverlay 1.5s;
+    }
+    #turn-message {
+        background-color: #fff; color: #000;
+        padding: 20px 40px; font-size: 2rem; font-weight: bold;
+        border-radius: 5px; border: 2px solid #000;
+    }
+    .tutorial-mode #full-scoreboard,
+    .tutorial-mode .bso-board,
+    .tutorial-mode #bases-diagram,
+    .tutorial-mode .controls,
+    .tutorial-mode #cold-game-button {
+        display: none !important;
+    }
+    #tutorial-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.75);
+        z-index: 120;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        padding: 20px;
+        box-sizing: border-box;
+        text-align: center;
+    }
+    #tutorial-message {
+        font-size: 1.5rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        white-space: pre-line;
+    }
+    #tutorial-next-button {
+         padding: 12px 35px; font-size: 1.2rem; font-weight: bold;
+        color: #000; background-color: #f1c40f; border: 2px solid #f39c12;
+        border-radius: 5px; cursor: pointer; transition: all 0.3s;
+    }
+    #tutorial-next-button:hover {
+        background-color: #f39c12; color: #fff;
+    }
+    
+    @keyframes fadeOverlay {
+        0% { opacity: 0; } 25% { opacity: 1; }
+        75% { opacity: 1; } 100% { opacity: 0; }
+    }
+</style>
+<style id="pitch-animation-style"></style>
 </head>
 <body>
     <div id="title-screen">
@@ -425,13 +425,6 @@
             <button class="difficulty-button" data-difficulty="normal">NORMAL</button>
             <button class="difficulty-button" data-difficulty="hard">HARD</button>
             <button class="difficulty-button" data-difficulty="extreme">EXTREME</button>
-        </div>
-    </div>
-    <div id="tutorial-selection-screen">
-        <h1 id="tutorial-selection-title">SELECT TUTORIAL</h1>
-        <div id="tutorial-selection-buttons">
-            <button class="tutorial-select-button" data-tutorial="batting">BATTING TUTORIAL</button>
-            <button class="tutorial-select-button" data-tutorial="pitching">PITCHING TUTORIAL</button>
         </div>
     </div>
     <div id="inning-selection-screen">
@@ -456,10 +449,10 @@
         <div id="final-scoreboard-container"></div>
         <button id="play-again-button">다시하기</button>
     </div>
-    
-    <div id="playball-overlay">
-        <button id="initial-playball-button">PLAY BALL</button>
-    </div>
+
+<div id="playball-overlay">
+    <button id="initial-playball-button">PLAY BALL</button>
+</div>
 
 <div class="game-container">
     <div id="turn-overlay" style="display: none;">
@@ -518,7 +511,6 @@
     </div>
     <button id="cold-game-button">COLD</button>
 </div>
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const elements = {
@@ -531,8 +523,6 @@
             playstyleSelectionScreen: document.getElementById('playstyle-selection-screen'),
             playstyleButtons: document.querySelectorAll('.playstyle-button'),
             tutorialButton: document.getElementById('tutorial-button'),
-            tutorialSelectionScreen: document.getElementById('tutorial-selection-screen'),
-            tutorialSelectButtons: document.querySelectorAll('.tutorial-select-button'),
             tutorialOverlay: document.getElementById('tutorial-overlay'),
             tutorialMessage: document.getElementById('tutorial-message'),
             tutorialNextButton: document.getElementById('tutorial-next-button'),
@@ -613,8 +603,8 @@
         };
         
         const DIFFICULTY_SETTINGS = {
-            easy:    { speedModifier: -20, durationModifier: 1.3 },
-            normal:  { speedModifier: -10, durationModifier: 1.1 },
+            easy:    { speedModifier: -20, durationModifier: 1.5 },
+            normal:  { speedModifier: -10, durationModifier: 1.2 },
             hard:    { speedModifier: 0,   durationModifier: 0.95 },
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
@@ -877,7 +867,7 @@
                         atBatEnded = true;
                         goToNextBatter();
                     } else {
-                        displayText = result.subType === 'SWING_AND_A_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
+                        displayText = result.subType === 'SWING_AND_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
                     }
                     break;
                 case 'BALL':
@@ -1088,7 +1078,7 @@
             
             elements.gameResultTitle.textContent = resultMessage;
             elements.finalScoreDisplay.textContent = `AWAY ${awayScore} : ${homeScore} HOME`;
-            elements.finalDifficultyDisplay.textContent = `Difficulty: ${currentDifficulty}`; // [NEW] Display difficulty
+            elements.finalDifficultyDisplay.textContent = `Difficulty: ${currentDifficulty}`;
             
             elements.finalScoreboardContainer.innerHTML = ''; 
             const finalBoardWrapper = document.createElement('div');
@@ -1299,6 +1289,81 @@
         
         // --- Pitching & Auto-Simulate Functions ---
         
+        function autoPitchLoop() {
+            if (!isGameActive || gameState.half !== 'Top' || gameState.isPitching) return;
+            
+            if (gameState.bso.o >= 3) {
+                setTimeout(() => { if (isGameActive) changeInning(); }, 1500);
+                return;
+            }
+            
+            gameState.isPitching = true;
+            resetBallPosition();
+            elements.strikeZone.style.opacity = '0';
+            elements.animationStyle.innerHTML = '';
+
+            setTimeout(() => { 
+                if (!isGameActive) { gameState.isPitching = false; return; }
+
+                const pitchData = decidePitchPath();
+                const animationDuration = calculateAnimationDuration(pitchData.speed);
+                const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
+
+                createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
+                elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
+                
+                let wasHit = false;
+
+                setTimeout(() => { 
+                    if (!isGameActive) { gameState.isPitching = false; return; }
+                    
+                    let result;
+                    const swingChance = pitchData.isStrikeLocation ? AI_BATTING_SETTINGS.swingChanceStrike : AI_BATTING_SETTINGS.swingChanceBall;
+
+                    if (Math.random() < swingChance) {
+                        if (Math.random() < AI_BATTING_SETTINGS.contactChance) {
+                            result = decideBattedBallResult(0, true);
+                            wasHit = (result.type !== 'FOUL');
+                        } else {
+                            result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
+                        }
+                    } else {
+                        result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
+                    }
+                    
+                    const processNextAIStep = (atBatEnded) => {
+                        gameState.isPitching = false;
+                        const delay = atBatEnded ? 1200 : 600;
+                        setTimeout(() => {
+                            if (atBatEnded && gameState.bso.o < 3) {
+                                 elements.pitchResult.textContent = 'Next Batter';
+                            }
+                            autoPitchLoop();
+                        }, delay);
+                    };
+
+                    if (wasHit || result.type === 'FOUL') {
+                        elements.strikeZone.classList.add('strike-hit');
+                        animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
+                            elements.strikeZone.classList.remove('strike-hit');
+                            const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                            processNextAIStep(atBatEnded);
+                        });
+                    } else {
+                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        processNextAIStep(atBatEnded);
+                    }
+
+                }, animationDuration + 250);
+
+                 setTimeout(() => {
+                    if (!isGameActive) return;
+                    elements.strikeZone.style.opacity = '1';
+                }, animationDuration + 500);
+
+            }, 600);
+        }
+
         function prepareForManualPitch() {
             if (gameState.bso.o >= 3) {
                  setTimeout(() => { if(isGameActive) changeInning() }, 1500);
@@ -1490,11 +1555,7 @@
                 button.addEventListener('click', () => {
                     if (gameState.isPitching) return;
                     selectedPitchType = button.dataset.pitchType;
-                    if(isTutorialActive) {
-                         runPitchingPractice();
-                    } else {
-                        elements.pitchingPrompt.textContent = 'Click on the field to choose a location.';
-                    }
+                    elements.pitchingPrompt.textContent = 'Click on the field to choose a location.';
                 });
             });
             
@@ -1522,59 +1583,67 @@
                 setTimeout(() => {
                     elements.difficultyScreen.style.display = 'none';
                     elements.difficultyScreen.style.animation = '';
-                    elements.tutorialSelectionScreen.style.display = 'flex';
+                    startTutorial();
                 }, 500);
-            });
-
-            elements.tutorialSelectButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const type = button.dataset.tutorial;
-                    elements.tutorialSelectionScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                    setTimeout(() => {
-                        elements.tutorialSelectionScreen.style.display = 'none';
-                        elements.tutorialSelectionScreen.style.animation = '';
-                        if (type === 'batting') {
-                            startBattingTutorial();
-                        } else {
-                            startPitchingTutorial();
-                        }
-                    }, 500);
-                });
             });
             
             updateUI();
         }
         init();
 
-        // --- Batting Tutorial Functions ---
-        let battingTutorialCount = 0;
-        const totalBattingTutorialPitches = 5;
-        const battingTutorialMessages = [
+        // --- 튜토리얼 관련 함수 ---
+        let tutorialPitchCount = 0;
+        const totalTutorialPitches = 5;
+        const tutorialMessages = [
             "Welcome to the Batting Tutorial!\nLet's learn how to hit.",
             "A pitch will be thrown from the center.\nYour goal is to click the ball right as it enters the strike zone (the dotted box).",
-            `You will get ${totalBattingTutorialPitches} practice pitches.\nLet's start!`,
+            `You will get ${totalTutorialPitches} practice pitches.\nLet's start!`,
             "Great! Let's try again.",
             "Tutorial complete!\nYou're ready for a real game."
         ];
 
-        function startBattingTutorial() {
+        function startTutorial() {
             isTutorialActive = true;
             elements.gameContainer.style.display = 'block';
             elements.gameContainer.classList.add('tutorial-mode');
             elements.tutorialOverlay.style.display = 'flex';
-            battingTutorialCount = 0;
+            tutorialPitchCount = 0;
             currentTutorialStep = 0;
-            showTutorialStep(battingTutorialMessages, currentTutorialStep);
+            showTutorialStep(currentTutorialStep);
         }
-        
-        function runBattingPractice() {
-            if (battingTutorialCount >= totalBattingTutorialPitches) {
+
+        function showTutorialStep(stepIndex) {
+            elements.tutorialMessage.textContent = tutorialMessages[stepIndex];
+            elements.tutorialNextButton.textContent = "NEXT";
+            
+            if (stepIndex === 2) { 
+                elements.tutorialNextButton.textContent = "START BATTING PRACTICE";
+            } else if (stepIndex >= tutorialMessages.length -1) { 
+                elements.tutorialNextButton.textContent = "FINISH";
+            }
+        }
+
+        elements.tutorialNextButton.addEventListener('click', () => {
+            currentTutorialStep++;
+
+            if (currentTutorialStep === tutorialMessages.length - 2) { 
+                 elements.tutorialOverlay.style.display = 'none';
+                 runTutorialPitch();
+            } else if (currentTutorialStep >= tutorialMessages.length) { 
+                endTutorial();
+            } else {
+                showTutorialStep(currentTutorialStep);
+            }
+        });
+
+        function runTutorialPitch() {
+            if (tutorialPitchCount >= totalTutorialPitches) {
                 elements.tutorialOverlay.style.display = 'flex';
-                showTutorialStep(battingTutorialMessages, battingTutorialMessages.length - 1);
+                showTutorialStep(tutorialMessages.length - 1);
                 return;
             }
-            battingTutorialCount++;
-            elements.pitchResult.textContent = `PRACTICE SWING: ${battingTutorialCount} / ${totalBattingTutorialPitches}`;
+            tutorialPitchCount++;
+            elements.pitchResult.textContent = `PRACTICE SWING: ${tutorialPitchCount} / ${totalTutorialPitches}`;
             
             resetBallPosition();
             elements.animationStyle.innerHTML = ''; 
@@ -1598,122 +1667,17 @@
             const tutorialSwingHandler = () => {
                 elements.field.removeEventListener('click', tutorialSwingHandler);
                 animateBattedBall({type:'HIT', value: 1}, {x: pitchData.centerX, y: pitchData.centerY}, () => {
-                    setTimeout(runBattingPractice, 1000); 
+                    setTimeout(runTutorialPitch, 1000); 
                 });
             };
             elements.field.addEventListener('click', tutorialSwingHandler);
         }
 
-        // --- Pitching Tutorial Functions ---
-        let pitchingTutorialCount = 0;
-        const totalPitchingTutorialPitches = 5;
-        const pitchingTutorialMessages = [
-            "Welcome to the Pitching Tutorial!\nLet's learn how to pitch.",
-            "First, select a pitch type from the buttons below.",
-            "Now, click inside the dotted strike zone to aim your pitch.",
-            `Good pitch! Let's try that again. You have ${totalPitchingTutorialPitches - 1} more practice pitches.`,
-            "Tutorial complete! You're ready to take the mound."
-        ];
-        
-        let tutorialPitchLocationHandler = null;
-
-        function startPitchingTutorial() {
-            isTutorialActive = true;
-            elements.gameContainer.style.display = 'block';
-            elements.gameContainer.classList.add('tutorial-mode');
-            elements.pitchingControls.style.display = 'flex';
-            elements.pitchTypeButtons.style.display = 'flex';
-            elements.tutorialOverlay.style.display = 'flex';
-            pitchingTutorialCount = 0;
-            currentTutorialStep = 0;
-            showTutorialStep(pitchingTutorialMessages, currentTutorialStep);
-        }
-        
-        function runPitchingPractice() {
-            if (pitchingTutorialCount >= totalPitchingTutorialPitches) {
-                 elements.tutorialOverlay.style.display = 'flex';
-                 showTutorialStep(pitchingTutorialMessages, pitchingTutorialMessages.length - 1);
-                return;
-            }
-
-            const promptStep = (selectedPitchType === null) ? 1 : 2;
-            const remainingPitches = totalPitchingTutorialPitches - pitchingTutorialCount;
-            pitchingTutorialMessages[3] = `Good pitch! Let's try that again. You have ${remainingPitches - 1} more practice pitches.`;
-            showTutorialStep(pitchingTutorialMessages, promptStep);
-            
-            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
-            
-            if(tutorialPitchLocationHandler) {
-                 elements.field.removeEventListener('click', tutorialPitchLocationHandler);
-            }
-
-            tutorialPitchLocationHandler = (e) => {
-                 if (!isTutorialActive || !selectedPitchType) return;
-                
-                elements.field.removeEventListener('click', tutorialPitchLocationHandler);
-                Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = true);
-
-                const fieldRect = elements.field.getBoundingClientRect();
-                const targetX = e.clientX - fieldRect.left;
-                const targetY = e.clientY - fieldRect.top;
-
-                const pitchTypeInfo = PITCH_TYPES[selectedPitchType];
-                const animationDuration = 500;
-                const animationTarget = { finalLeft: targetX - (BALL_DIAMETER / 2), finalTop: targetY - (BALL_DIAMETER / 2) };
-                
-                resetBallPosition();
-                createPitchAnimation(animationTarget, pitchTypeInfo);
-                elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
-                
-                setTimeout(() => {
-                    pitchingTutorialCount++;
-                    selectedPitchType = null;
-                    elements.pitchResult.textContent = `PRACTICE PITCH: ${pitchingTutorialCount} / ${totalPitchingTutorialPitches}`;
-                    runPitchingPractice();
-                }, animationDuration + 500);
-            };
-            
-            elements.field.addEventListener('click', tutorialPitchLocationHandler);
-        }
-
-
-        // --- General Tutorial Functions ---
-        let currentTutorialStep = 0;
-        
-        function showTutorialStep(messages, stepIndex) {
-            currentTutorialStep = stepIndex;
-            elements.tutorialMessage.textContent = messages[stepIndex];
-            elements.tutorialNextButton.textContent = (stepIndex < messages.length -1) ? "NEXT" : "FINISH";
-        }
-
-        elements.tutorialNextButton.addEventListener('click', () => {
-            const isBattingTute = elements.tutorialMessage.textContent.includes('Batting');
-            const currentMessages = isBattingTute ? battingTutorialMessages : pitchingTutorialMessages;
-            currentTutorialStep++;
-            
-            if (currentTutorialStep === 1 && !isBattingTute) {
-                 elements.tutorialOverlay.style.display = 'none';
-                 runPitchingPractice();
-            } else if (currentTutorialStep === 2 && isBattingTute) {
-                 elements.tutorialOverlay.style.display = 'none';
-                 runBattingPractice();
-            } else if (currentTutorialStep >= currentMessages.length) { 
-                endTutorial();
-            } else {
-                showTutorialStep(currentMessages, currentTutorialStep);
-            }
-        });
-
         function endTutorial() {
             isTutorialActive = false;
-            if(tutorialPitchLocationHandler) {
-                 elements.field.removeEventListener('click', tutorialPitchLocationHandler);
-                 tutorialPitchLocationHandler = null;
-            }
             elements.gameContainer.style.display = 'none';
             elements.gameContainer.classList.remove('tutorial-mode');
             elements.tutorialOverlay.style.display = 'none';
-            elements.pitchingControls.style.display = 'none';
             resetGame();
         }
     });
