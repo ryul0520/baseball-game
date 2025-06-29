@@ -1364,6 +1364,12 @@
             gameState.isPitching = false;
             selectedPitchType = null;
             elements.pitchingPrompt.textContent = 'Select a pitch type.';
+            elements.strikeZone.style.opacity = '1';
+            setTimeout(() => {
+                if (!gameState.isPitching) {
+                   elements.strikeZone.style.opacity = '0';
+                }
+            }, 2000);
         }
 
         function handlePlayerPitching(targetX, targetY) {
@@ -1374,7 +1380,7 @@
             elements.pitchingPrompt.textContent = '';
             
             resetBallPosition();
-            elements.strikeZone.style.opacity = '1'; 
+            elements.strikeZone.style.opacity = '0'; 
             elements.animationStyle.innerHTML = '';
 
             const maxOffset = 25;
