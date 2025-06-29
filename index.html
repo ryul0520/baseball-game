@@ -589,8 +589,8 @@
         const BALL_DIAMETER = 4.5;
         const FINAL_SCALE = 3.5;
         const FINAL_BALL_DIAMETER = BALL_DIAMETER * FINAL_SCALE;
-        const SOLID_CONTACT_THRESHOLD = 20; 
-        const FOUL_THRESHOLD = 40; 
+        const SOLID_CONTACT_THRESHOLD = 24; 
+        const FOUL_THRESHOLD = 48;
 
         const PITCH_TYPES = {
             FOUR_SEAM:  { name: '4-Seam Fastball', speedRange: [152, 168] },
@@ -609,11 +609,12 @@
             extreme: { speedModifier: 15,  durationModifier: 0.8 }
         };
 
-        const AI_BATTING_SETTINGS = {
-            swingChanceStrike: 0.90,
-            swingChanceBall: 0.15,
-            contactChance: 0.90,
-            foulChance: 0.22
+        // 난이도별 AI 타격 능력치 설정
+        const AI_DIFFICULTY_BATTING_SETTINGS = {
+            easy:    { swingChanceStrike: 0.75, swingChanceBall: 0.30, contactChance: 0.70, foulChance: 0.30, hitQualityModifier: -0.05 },
+            normal:  { swingChanceStrike: 0.90, swingChanceBall: 0.15, contactChance: 0.90, foulChance: 0.22, hitQualityModifier: 0 },
+            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.08, contactChance: 0.95, foulChance: 0.18, hitQualityModifier: 0.10 },
+            extreme: { swingChanceStrike: 0.99, swingChanceBall: 0.03, contactChance: 0.98, foulChance: 0.15, hitQualityModifier: 0.20 }
         };
         
         let currentDifficulty = 'normal';
@@ -664,12 +665,14 @@
             return rect;
         }
 
-        function decideBattedBallResult(distanceFromCenter, isAI = false) {
-            let baseRand = Math.random();
+        // AI 타격 능력치 반영하도록 수정
+        function decideBattedBallResult(distanceFromCenter, aiSettings = null) {
+            const isAI = !!aiSettings;
+            let baseRand = Math.random() - (isAI ? aiSettings.hitQualityModifier : 0);
             let penalty = distanceFromCenter / 100;
             baseRand += penalty * 0.5; 
             
-            const foulChance = isAI ? AI_BATTING_SETTINGS.foulChance : 0.08;
+            const foulChance = isAI ? aiSettings.foulChance : 0.08;
 
             if (baseRand < foulChance) return { type: 'FOUL' };
             else if (baseRand < (foulChance + 0.60)) {
@@ -784,7 +787,7 @@
                         const distance = Math.sqrt(Math.pow(clickX - pitchData.centerX, 2) + Math.pow(clickY - pitchData.centerY, 2));
                         
                         if (distance <= SOLID_CONTACT_THRESHOLD) {
-                            result = decideBattedBallResult(0, false);
+                            result = decideBattedBallResult(distance, null);
                         } else if (distance <= FOUL_THRESHOLD) {
                             result = { type: 'FOUL' };
                         } else {
@@ -795,13 +798,13 @@
                     if (result.type !== 'STRIKE' && result.type !== 'BALL') {
                         elements.strikeZone.classList.add('strike-hit');
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
-                            const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                            handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
                             elements.strikeZone.classList.remove('strike-hit');
-                            if (onCompletion) onCompletion(atBatEnded);
+                            if (onCompletion) onCompletion();
                         });
                     } else {
-                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        if (onCompletion) onCompletion(atBatEnded);
+                        handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        if (onCompletion) onCompletion();
                     }
                 };
 
@@ -815,8 +818,8 @@
                     }
                     if (!hasSwung) {
                         let result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED'};
-                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        if (onCompletion) onCompletion(atBatEnded);
+                        handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        if (onCompletion) onCompletion();
                     }
                 }, animationDuration + 250);
 
@@ -845,13 +848,12 @@
         }
         
         function handlePitchResult(result, pitchTypeInfo, speed) {
-            if (!isGameActive && !isTutorialActive) return false;
+            if (!isGameActive && !isTutorialActive) return;
             const teamSide = gameState.half === 'Top' ? 'away' : 'home';
             const currentTeam = gameState.teams[teamSide];
             const batter = gameState.batterStats[teamSide][gameState.currentBatterIndex[teamSide]];
 
             let displayText = '';
-            let atBatEnded = false;
             let isSacFly = false;
 
             elements.pitchInfo.textContent = `${pitchTypeInfo.name} - ${Math.round(speed)} km/h`;
@@ -864,7 +866,6 @@
                         gameState.bso.o++;
                         batter.atBats++;
                         resetBSCount();
-                        atBatEnded = true;
                         goToNextBatter();
                     } else {
                         displayText = result.subType === 'SWING_AND_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
@@ -877,7 +878,6 @@
                         currentTeam.BB++;
                         handleAdvancement({ bases: 1, isWalk: true });
                         resetBSCount();
-                        atBatEnded = true;
                         goToNextBatter();
                     } else {
                         displayText = 'BALL';
@@ -888,7 +888,6 @@
                     if (gameState.bso.s < 2) {
                         gameState.bso.s++;
                     }
-                    atBatEnded = false;
                     break;
                 case 'OUT':
                     const outsBeforePlay = gameState.bso.o;
@@ -929,7 +928,6 @@
                     }
                     
                     resetBSCount();
-                    atBatEnded = true;
                     goToNextBatter();
                     break;
                 case 'HIT':
@@ -939,15 +937,12 @@
                     displayText = result.value === 4 ? 'HOME RUN!' : (result.value === 1 ? 'SINGLE!' : 'DOUBLE!');
                     handleAdvancement({ bases: result.value });
                     resetBSCount();
-                    atBatEnded = true;
                     goToNextBatter();
                     break;
             }
             
             elements.pitchResult.textContent = displayText;
             if (!isTutorialActive) updateUI();
-            
-            return atBatEnded;
         }
 
         function goToNextBatter() {
@@ -1308,6 +1303,7 @@
                 const pitchData = decidePitchPath();
                 const animationDuration = calculateAnimationDuration(pitchData.speed);
                 const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
+                const aiSettings = AI_DIFFICULTY_BATTING_SETTINGS[currentDifficulty];
 
                 createPitchAnimation(animationTarget, pitchData.pitchTypeInfo);
                 elements.ball.style.animation = `pitch-move ${animationDuration / 1000}s linear forwards`;
@@ -1318,11 +1314,11 @@
                     if (!isGameActive) { gameState.isPitching = false; return; }
                     
                     let result;
-                    const swingChance = pitchData.isStrikeLocation ? AI_BATTING_SETTINGS.swingChanceStrike : AI_BATTING_SETTINGS.swingChanceBall;
+                    const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
 
                     if (Math.random() < swingChance) {
-                        if (Math.random() < AI_BATTING_SETTINGS.contactChance) {
-                            result = decideBattedBallResult(0, true);
+                        if (Math.random() < aiSettings.contactChance) {
+                            result = decideBattedBallResult(0, aiSettings);
                             wasHit = (result.type !== 'FOUL');
                         } else {
                             result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
@@ -1331,14 +1327,11 @@
                         result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
                     }
                     
-                    const processNextAIStep = (atBatEnded) => {
+                    const processNextAIStep = () => {
                         gameState.isPitching = false;
-                        const delay = atBatEnded ? 1200 : 600;
+                        const delay = 1200;
                         setTimeout(() => {
-                            if (atBatEnded && gameState.bso.o < 3) {
-                                 elements.pitchResult.textContent = 'Next Batter';
-                            }
-                            autoPitchLoop();
+                           autoPitchLoop();
                         }, delay);
                     };
 
@@ -1346,12 +1339,12 @@
                         elements.strikeZone.classList.add('strike-hit');
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             elements.strikeZone.classList.remove('strike-hit');
-                            const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                            processNextAIStep(atBatEnded);
+                            handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                            processNextAIStep();
                         });
                     } else {
-                        const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
-                        processNextAIStep(atBatEnded);
+                        handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
+                        processNextAIStep();
                     }
 
                 }, animationDuration + 250);
@@ -1419,7 +1412,8 @@
 
         function aiBatterSwingLogic(pitchData) {
             let result;
-            const swingChance = pitchData.isStrikeLocation ? AI_BATTING_SETTINGS.swingChanceStrike : AI_BATTING_SETTINGS.swingChanceBall;
+            const aiSettings = AI_DIFFICULTY_BATTING_SETTINGS[currentDifficulty];
+            const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
 
             const processNextStep = () => {
                 if (!isGameActive) return;
@@ -1434,8 +1428,8 @@
             };
             
             if (Math.random() < swingChance) {
-                if (Math.random() < AI_BATTING_SETTINGS.contactChance) {
-                    result = decideBattedBallResult(0, true);
+                if (Math.random() < aiSettings.contactChance) {
+                    result = decideBattedBallResult(0, aiSettings);
                     elements.strikeZone.classList.add('strike-hit');
                     animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                         elements.strikeZone.classList.remove('strike-hit');
@@ -1453,7 +1447,23 @@
                 processNextStep();
             }
         }
+        
+        function prepareForNextPitch() {
+            if (!isGameActive) return;
 
+            setTimeout(() => {
+                if (!isGameActive) return;
+
+                gameState.isPitching = false;
+                if (gameState.bso.o >= 3) {
+                    changeInning();
+                } else {
+                    updateBatterInfo();
+                    elements.pitchResult.textContent = 'Ready to bat!';
+                    elements.pitchButton.disabled = false;
+                }
+            }, 1200);
+        }
 
         function init() { 
             initBSODots(); 
@@ -1526,27 +1536,12 @@
                     }, 500);
                 }
             });
-
+            
             elements.pitchButton.addEventListener('click', () => {
                 if (isGameActive && gameState.half === 'Bot' && !gameState.isPitching) {
                     elements.pitchButton.disabled = true;
-                    handlePlayerPitch((atBatEnded) => {
-                       if (!isGameActive) return;
-                       gameState.isPitching = false;
-                       if (gameState.bso.o >= 3) {
-                           setTimeout(() => { if (isGameActive) changeInning(); }, 1500);
-                       } else {
-                           if (atBatEnded) {
-                               setTimeout(() => {
-                                   if(isGameActive) {
-                                       elements.pitchResult.textContent = 'Next Batter';
-                                       elements.pitchButton.disabled = false;
-                                   }
-                               }, 1000);
-                           } else {
-                               elements.pitchButton.disabled = false;
-                           }
-                       }
+                    handlePlayerPitch(() => {
+                        prepareForNextPitch();
                     });
                 }
             });
