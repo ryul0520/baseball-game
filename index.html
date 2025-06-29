@@ -685,7 +685,7 @@
                         }
                     }
                     
-                    if (result.type !== 'STRIKE' && result.type !== 'BALL' && result.type !== 'HIT_BY_PITCH') {
+                    if (result.type !== 'STRIKE' && result.type !== 'BALL') {
                         elements.strikeZone.classList.add('strike-hit');
                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
                             const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
@@ -707,10 +707,8 @@
                         elements.field.removeEventListener('click', swingListener);
                     }
                     if (!hasSwung) {
+                        // [REMOVED] 힛 바이 피치 발생 로직 제거
                         let result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED'};
-                        if (!pitchData.isStrikeLocation && Math.random() < 0.02) {
-                            result = { type: 'HIT_BY_PITCH' };
-                        }
                         const atBatEnded = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed);
                         if (onCompletion) onCompletion(atBatEnded);
                     }
@@ -740,7 +738,6 @@
             setTimeout(callback, battedAnim.duration * 1000);
         }
         
-        // [수정] 야수선택, 땅볼아웃 로직 전체 수정
         function handlePitchResult(result, pitchTypeInfo, speed) {
             if (!isGameActive && !isTutorialActive) return false;
             const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
@@ -772,12 +769,7 @@
                         displayText = 'BALL';
                     }
                     break;
-                case 'HIT_BY_PITCH':
-                    displayText = 'HIT BY PITCH';
-                    handleAdvancement({ bases: 1, isWalk: true });
-                    resetBSCount();
-                    atBatEnded = true;
-                    break;
+                // [REMOVED] 힛 바이 피치 처리 case 제거
                 case 'FOUL':
                     displayText = 'FOUL';
                     if (gameState.bso.s < 2) {
@@ -787,42 +779,38 @@
                     break;
                 case 'OUT':
                     const outsBeforePlay = gameState.bso.o;
-                    
-                    if (outsBeforePlay === 2) {
-                        gameState.bso.o++;
-                        displayText = result.subType === 'FLY' ? 'FLY OUT' : (result.subType === 'GROUND' ? 'GROUND OUT' : 'LINE DRIVE OUT');
+
+                    if (outsBeforePlay < 2 && result.subType === 'GROUND' && gameState.runners[0] && Math.random() < 0.55) {
+                        displayText = 'DOUBLE PLAY!';
+                        gameState.bso.o += 2;
+                        handleAdvancement({ groundOutType: 'doublePlay' });
                     } else {
-                        if (result.subType === 'FLY') {
-                            if (gameState.runners[2]) {
-                                displayText = 'SACRIFICE FLY';
-                                gameState.bso.o++;
-                                handleAdvancement({ isSacFly: true });
-                            } else {
-                                displayText = 'FLY OUT';
-                                gameState.bso.o++;
-                            }
-                        } else if (result.subType === 'GROUND') {
-                            const runnerOnFirst = gameState.runners[0];
-                            if (!runnerOnFirst) {
-                                displayText = 'GROUND OUT';
-                                gameState.bso.o++;
-                                handleAdvancement({ groundOutType: 'simple' });
-                            } else {
-                                if (Math.random() < 0.55) {
-                                    displayText = 'DOUBLE PLAY!';
-                                    gameState.bso.o += 2;
-                                    handleAdvancement({ groundOutType: 'doublePlay' });
+                        gameState.bso.o++;
+                        
+                        if (gameState.bso.o >= 3) {
+                            displayText = result.subType === 'FLY' ? 'FLY OUT' : (result.subType === 'GROUND' ? 'GROUND OUT' : 'LINE DRIVE OUT');
+                        } else {
+                            if (result.subType === 'FLY') {
+                                if (gameState.runners[2]) {
+                                    displayText = 'SACRIFICE FLY';
+                                    handleAdvancement({ isSacFly: true });
                                 } else {
-                                    displayText = "FIELDER'S CHOICE";
-                                    gameState.bso.o++;
-                                    handleAdvancement({ groundOutType: 'fieldersChoice' });
+                                    displayText = 'FLY OUT';
                                 }
+                            } else if (result.subType === 'GROUND') {
+                                if (gameState.runners[0]) {
+                                    displayText = "FIELDER'S CHOICE";
+                                    handleAdvancement({ groundOutType: 'fieldersChoice' });
+                                } else {
+                                    displayText = 'GROUND OUT';
+                                    handleAdvancement({ groundOutType: 'simple' });
+                                }
+                            } else {
+                                displayText = 'LINE DRIVE OUT';
                             }
-                        } else { // LINE DRIVE OUT
-                            displayText = 'LINE DRIVE OUT';
-                            gameState.bso.o++;
                         }
                     }
+                    
                     resetBSCount();
                     atBatEnded = true;
                     break;
@@ -1076,7 +1064,6 @@
             effectEl.classList.add('score-anim');
         }
         
-        // [수정] groundOutType 파라미터로 땅볼 상황별 주자 진루 세분화
         function handleAdvancement({ bases = 0, isWalk = false, groundOutType = null, isSacFly = false }) {
             if (!isGameActive && !isTutorialActive) return;
 
@@ -1091,14 +1078,15 @@
                 newRunners[1] = originalRunners[1];
             } else if (groundOutType) {
                 switch (groundOutType) {
-                    case 'simple': // 타자 아웃, 주자 한 베이스씩 진루
+                    case 'simple':
                         if (originalRunners[2]) runsScored++;
                         if (originalRunners[1]) newRunners[2] = true;
+                        if (originalRunners[0]) newRunners[1] = true;
                         break;
-                    case 'doublePlay': // 타자와 1루 주자 아웃, 2루->3루, 3루는 홀드
+                    case 'doublePlay':
                         if (originalRunners[2]) newRunners[2] = true;
                         break;
-                    case 'fieldersChoice': // 타자 1루 진루, 1루주자 아웃, 2루->3루, 3루->홈
+                    case 'fieldersChoice':
                         newRunners[0] = true;
                         if (originalRunners[1]) newRunners[2] = true;
                         if (originalRunners[2]) runsScored++;
