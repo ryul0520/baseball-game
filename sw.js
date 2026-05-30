@@ -3,8 +3,7 @@ const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
-  './icon-192x192.png',
-  './icon-512x512.png'
+  './iconpark.png',
 ];
 
 // 1. 서비스 워커 설치 및 파일 캐싱
