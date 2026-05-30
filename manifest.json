@@ -1,0 +1,22 @@
+{
+  "name": "Dynamic Baseball Simulator",
+  "short_name": "Baseball Sim",
+  "description": "An interactive dynamic baseball simulator",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#dcdcdc",
+  "theme_color": "#333333",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
