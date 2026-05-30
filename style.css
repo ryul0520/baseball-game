@@ -1,1894 +1,236 @@
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <!-- 화면 확대 방지 및 모바일 최적화 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dynamic Baseball Simulator</title>
-    
-    <!-- PWA 관련 설정 -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#333333">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
-
-    <style>
-        :root {
-            --sz-width: 100px;
-            --sz-height: 120px;
-            --sz-left: calc(50% - (var(--sz-width) / 2));
-            --sz-top: calc(50% - (var(--sz-height) / 2));
-        }
-        body {
-            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
-            background-color: #dcdcdc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            touch-action: none; /* 모바일 새로고침 스와이프 방지 */
-        }
-        #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://source.unsplash.com/random/800x600/?baseball,stadium,night') no-repeat center center;
-            background-size: cover;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen, #game-over-screen, #playball-overlay {
-             display: none;
-        }
-        #difficulty-screen, #inning-selection-screen, #playstyle-selection-screen { z-index: 199; }
-        #game-over-screen { z-index: 150; }
-        #playball-overlay { z-index: 101; }
-
-        #game-title, #difficulty-title, #game-result-title, #inning-title, #playstyle-title {
-            font-size: 4rem;
-            font-weight: bold;
-            text-shadow: 3px 3px 6px #000;
-            margin-bottom: 20px;
-        }
-        #game-result-title.win { color: #4ecca3; }
-        #game-result-title.lose { color: #ff6b6b; }
-        
-        #final-score-display {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        #final-difficulty-display {
-            font-size: 1.1rem;
-            color: #d1d1d1;
-            margin-bottom: 25px;
-            text-transform: capitalize;
-            font-weight: 500;
-        }
-        #final-scoreboard-container {
-            background-color: rgba(255,255,255,0.9);
-            border-radius: 5px;
-            padding: 15px;
-            width: 100%;
-            max-width: 550px;
-            color: #000;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        
-        .result-indicator {
-            font-size: 0.7rem;
-            font-weight: bold;
-            margin-left: 8px;
-            padding: 2px 5px;
-            border-radius: 3px;
-            color: white;
-        }
-        .result-win { background-color: #3498db; }
-        .result-lose { background-color: #e74c3c; }
-
-        #final-scoreboard-container .scoreboard-row { color: #333; }
-        #final-scoreboard-container .header-row { background-color: #333; color: #fff; }
-
-        #difficulty-buttons, #inning-buttons, #playstyle-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        #game-start-button, .difficulty-button, #play-again-button, #initial-playball-button, .inning-button, #tutorial-button, .playstyle-button {
-            padding: 15px 40px; font-size: 1.5rem; font-weight: bold;
-            color: #000; background-color: #fff; border: 2px solid #000;
-            border-radius: 5px; cursor: pointer; transition: all 0.3s;
-            width: 350px;
-            text-align: center;
-        }
-        #game-start-button, .difficulty-button, .inning-button, #tutorial-button {
-            width: 250px;
-        }
-        #game-start-button:hover, .difficulty-button:hover, #play-again-button:hover, #initial-playball-button:hover, .inning-button:hover, #tutorial-button:hover, .playstyle-button:hover {
-            background-color: #000;
-            color: #fff;
-        }
-        #tutorial-button {
-            margin-bottom: 20px;
-            background-color: #f1c40f;
-            border-color: #f39c12;
-        }
-        #tutorial-button:hover {
-            background-color: #f39c12;
-            color: #fff;
-        }
-
-        #initial-playball-button {
-            font-size: 2.5rem; padding: 20px 60px; width: auto;
-            border: 3px solid #fff; background-color: rgba(0,0,0,0.5);
-            color: #fff; text-shadow: 2px 2px 4px #000;
-            box-shadow: 0 0 20px rgba(255,255,255,0.5); text-transform: uppercase;
-        }
-        #initial-playball-button:hover {
-            background-color: rgba(255,255,255,1); color: #000;
-            border-color: #000; text-shadow: none;
-        }
-
-        @keyframes fadeOutScreen {
-            from { opacity: 1; }
-            to { opacity: 0; pointer-events: none; }
-        }
-        .game-container {
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            border: 1px solid #333;
-            text-align: center;
-            width: 95%;
-            max-width: 600px;
-            display: none;
-            position: relative;
-            z-index: 99;
-        }
-        
-        #full-scoreboard, #final-scoreboard-container #full-scoreboard {
-            border: 1px solid #333;
-            margin-bottom: 10px;
-        }
-        .scoreboard-row {
-            display: grid;
-        }
-        .header-row {
-            font-weight: bold;
-            background-color: #333;
-            color: #fff;
-        }
-        .cell {
-            padding: 4px 1px;
-            border-left: 1px solid #ccc;
-            border-top: 1px solid #ccc;
-            font-size: 0.75rem;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .team-name {
-            font-weight: bold;
-            font-size: 0.8rem;
-            border-left: none;
-            justify-content: flex-start;
-            padding-left: 5px;
-        }
-        .stat-r, .stat-h, .stat-e, .stat-b {
-            font-weight: bold;
-            background-color: #a9a9a9;
-        }
-        #home-row .cell { border-bottom: 1px solid #333; }
-        
-        .header-row .extra-inning {
-            background-color: #2980b9;
-        }
-        
-        #field-container { position: relative; }
-        #bases-diagram {
-            position: absolute; top: 10px; right: 10px;
-            width: 60px; height: 60px; z-index: 10;
-        }
-        .base {
-            position: absolute; width: 15px; height: 15px;
-            background-color: transparent; border: 2px solid #bbb;
-            transform: rotate(45deg); transition: all 0.3s;
-        }
-        #base-2b { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
-        #base-1b { top: 50%; right: 0; transform: translateY(-50%) rotate(45deg); }
-        #base-3b { top: 50%; left: 0; transform: translateY(-50%) rotate(45deg); }
-        .base.runner-on { background-color: #fff; border-color: #000; }
-        #field {
-            width: 100%; height: 350px; background-color: #4a4a4a;
-            border: 3px solid #1a1a1a; position: relative;
-            overflow: hidden; perspective: 500px;
-        }
-        #score-effect {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #ffdd57;
-            text-shadow: 3px 3px 8px rgba(0,0,0,0.8);
-            z-index: 110;
-            pointer-events: none;
-            display: none;
-        }
-        .score-anim {
-            display: block !important;
-            animation: score-animation 1.5s ease-out forwards;
-        }
-        @keyframes score-animation {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            30% { transform: translate(-50%, -60%) scale(1.1); opacity: 1; }
-            50% { transform: translate(-50%, -60%) scale(1); opacity: 1; }
-            100% { transform: translate(-50%, -80%) scale(1); opacity: 0; }
-        }
-
-        #strike-zone {
-            position: absolute; width: var(--sz-width); height: var(--sz-height);
-            border: 2px dotted rgba(255, 255, 255, 0.8);
-            left: var(--sz-left); top: var(--sz-top);
-            box-sizing: border-box; opacity: 1; 
-            transition: opacity 0.5s ease-in-out;
-        }
-        #strike-zone.strike-hit { border-color: #fff; background-color: rgba(255, 255, 255, 0.1); }
-        #home-plate {
-            position: absolute; width: 82px; height: 82px;
-            background-color: #e0e0e0; border: 1px solid #333;
-            bottom: 7px; left: 50%; transform: translateX(-50%);
-            clip-path: polygon(0% 0%, 100% 0%, 100% 55%, 50% 100%, 0% 55%);
-        }
-        #baseball {
-            position: absolute; width: 4.5px; height: 4.5px;
-            background: #fff; border-radius: 50%;
-            top: 20%; left: calc(50% - 2.25px); transform: scale(1);
-        }
-        
-        .ghost-ball {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 6;
-            opacity: 0;
-            width: 4.5px;
-            height: 4.5px;
-        }
-        .ghost-ball-strike { 
-            background-color: #FBBF24;
-        }
-        .ghost-ball-ball { 
-            background-color: #84CC16;
-        }
-        
-        #strikeout-overlay, #homerun-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 115;
-            pointer-events: none;
-        }
-        #strikeout-text {
-            font-size: 5rem;
-            font-weight: 900;
-            color: #e53935;
-            text-shadow: 3px 3px 0 #fff, 5px 5px 8px #000;
-            text-transform: uppercase;
-        }
-        .show-strikeout {
-            display: flex !important;
-            animation: strikeout-anim 1.5s ease-in-out forwards;
-        }
-        @keyframes strikeout-anim {
-            0% { opacity: 0; transform: scale(0.5); }
-            20% { opacity: 1; transform: scale(1.1); }
-            80% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.8); }
-        }
-
-        #homerun-text {
-            font-size: 6rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            animation: rainbow-text 2s linear infinite, homerun-anim 2.5s ease-out forwards;
-        }
-        .show-homerun {
-            display: flex !important;
-        }
-        @keyframes homerun-anim {
-            0% { transform: scale(0.2) rotate(-15deg); opacity: 0; }
-            25% { transform: scale(1.2) rotate(5deg); opacity: 1; }
-            50% { transform: scale(1) rotate(-3deg); opacity: 1; }
-            100% { transform: scale(2.5) rotate(10deg); opacity: 0; }
-        }
-        @keyframes rainbow-text {
-            0% { color: #ff0000; text-shadow: 0 0 10px #ff0000; }
-            15% { color: #ff7f00; text-shadow: 0 0 10px #ff7f00; }
-            30% { color: #ffff00; text-shadow: 0 0 10px #ffff00; }
-            45% { color: #00ff00; text-shadow: 0 0 10px #00ff00; }
-            60% { color: #0000ff; text-shadow: 0 0 10px #0000ff; }
-            75% { color: #4b0082; text-shadow: 0 0 10px #4b0082; }
-            90% { color: #9400d3; text-shadow: 0 0 10px #9400d3; }
-            100% { color: #ff0000; text-shadow: 0 0 10px #ff0000; }
-        }
-
-        .controls { 
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            min-height: 50px;
-        }
-        #pitch-button {
-            padding: 12px 30px; font-size: 1.2rem; font-weight: bold;
-            color: #fff; background-color: #000; border: 2px solid #000;
-            border-radius: 0; cursor: pointer; transition: background-color 0.3s, color 0.3s;
-        }
-        #pitch-button:hover:not(:disabled) { background-color: #fff; color: #000; }
-        #pitch-button:disabled { background-color: #888; border-color: #888; color: #ccc; cursor: not-allowed; }
-        
-        #pitching-controls {
-            display: none;
-            width: 100%;
-            flex-direction: column;
-            align-items: center;
-        }
-        #pitching-prompt {
-            font-size: 1rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #1a1a1a;
-        }
-        #pitch-type-buttons {
-            display: none;
-            flex-direction: column; 
-            gap: 8px; 
-            align-items: center;
-        }
-        .pitch-button-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .pitch-type-button {
-            padding: 8px 12px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: 2px solid #333;
-            background-color: #fff;
-            transition: all 0.2s;
-            min-width: 80px;
-        }
-        .pitch-type-button:hover:not(:disabled) {
-            background-color: #333;
-            color: #fff;
-        }
-        .pitch-type-button:disabled {
-            background-color: #aaa;
-            color: #eee;
-            cursor: not-allowed;
-        }
-
-        #cold-game-button {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            background-color: rgba(192, 57, 43, 0.7);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            padding: 4px 8px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            z-index: 115;
-            transition: background-color 0.3s;
-            display: none;
-        }
-        #cold-game-button:hover {
-            background-color: rgba(169, 50, 38, 0.9);
-        }
-
-        .bso-board { background-color: #e9e9e9; padding: 10px; border: 1px solid #aaa; margin-top: 10px; }
-        #batter-info {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-            height: 20px;
-        }
-        #pitch-result { font-size: 1.5rem; font-weight: bold; margin-bottom: 5px; height: 30px; color: #000; }
-        #pitch-info { font-size: 0.9rem; color: #555; height: 20px; margin-bottom: 10px; }
-        .counts { display: flex; justify-content: space-around; align-items: center; }
-        .count-display { display: flex; align-items: center; }
-        .count-label { font-size: 1.2rem; font-weight: bold; margin-right: 8px; }
-        .dots { display: flex; gap: 5px; }
-        .dot { width: 16px; height: 16px; border-radius: 50%; background-color: #ccc; transition: background-color 0.3s; }
-        .dot-b.active { background-color: #a3d900; }
-        .dot-s.active { background-color: #f7ce00; }
-        .dot-o.active { background-color: #e53935; }
-        
-        #turn-overlay {
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100; opacity: 0; pointer-events: none;
-            animation: fadeOverlay 1.5s;
-        }
-        #turn-message {
-            background-color: #fff; color: #000;
-            padding: 20px 40px; font-size: 2rem; font-weight: bold;
-            border-radius: 5px; border: 2px solid #000;
-        }
-        .tutorial-mode #full-scoreboard,
-        .tutorial-mode .bso-board,
-        .tutorial-mode #bases-diagram,
-        .tutorial-mode .controls,
-        .tutorial-mode #cold-game-button {
-            display: none !important;
-        }
-        #tutorial-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.75);
-            z-index: 120;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        #tutorial-message {
-            font-size: 1.5rem;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            white-space: pre-line;
-        }
-        #tutorial-next-button {
-            padding: 12px 35px; font-size: 1.2rem; font-weight: bold;
-            color: #000; background-color: #f1c40f; border: 2px solid #f39c12;
-            border-radius: 5px; cursor: pointer; transition: all 0.3s;
-        }
-        #tutorial-next-button:hover {
-            background-color: #f39c12; color: #fff;
-        }
-        
-        @keyframes fadeOverlay {
-            0% { opacity: 0; } 25% { opacity: 1; }
-            75% { opacity: 1; } 100% { opacity: 0; }
-        }
-</style>
-<style id="pitch-animation-style"></style>
-</head>
-<body>
-    <div id="title-screen">
-        <h1 id="game-title">DYNAMIC BASEBALL</h1>
-        <button id="game-start-button">GAME START</button>
-    </div>
-    <div id="difficulty-screen">
-        <h1 id="difficulty-title">SELECT DIFFICULTY</h1>
-        <div id="difficulty-buttons">
-            <button id="tutorial-button">TUTORIAL</button>
-            <button class="difficulty-button" data-difficulty="easy">EASY</button>
-            <button class="difficulty-button" data-difficulty="normal">NORMAL</button>
-            <button class="difficulty-button" data-difficulty="hard">HARD</button>
-            <button class="difficulty-button" data-difficulty="extreme">EXTREME</button>
-        </div>
-    </div>
-    <div id="inning-selection-screen">
-        <h1 id="inning-title">SELECT INNINGS</h1>
-        <div id="inning-buttons">
-            <button class="inning-button" data-innings="3">3 Innings</button>
-            <button class="inning-button" data-innings="6">6 Innings</button>
-            <button class="inning-button" data-innings="9">9 Innings</button>
-        </div>
-    </div>
-    <div id="playstyle-selection-screen">
-        <h1 id="playstyle-title">SELECT PLAY STYLE</h1>
-        <div id="playstyle-buttons">
-            <button class="playstyle-button" data-style="auto">Auto Pitch</button>
-            <button class="playstyle-button" data-style="manual">Manual Pitch</button>
-        </div>
-    </div>
-    <div id="game-over-screen">
-        <h1 id="game-result-title">GAME OVER</h1>
-        <div id="final-score-display">AWAY 0 : 0 HOME</div>
-        <div id="final-difficulty-display"></div>
-        <div id="final-scoreboard-container"></div>
-        <button id="play-again-button">다시하기</button>
-    </div>
-
-<div id="playball-overlay">
-    <button id="initial-playball-button">PLAY BALL</button>
-</div>
-
-<div class="game-container">
-    <div id="turn-overlay" style="display: none;">
-        <div id="turn-message"></div>
-    </div>
-    <div id="tutorial-overlay">
-        <div id="tutorial-message"></div>
-        <button id="tutorial-next-button">NEXT</button>
-    </div>
-    <div id="full-scoreboard">
-    </div>
-    <div id="field-container">
-        <div id="score-effect"></div>
-        <div id="bases-diagram">
-            <div id="base-2b" class="base"></div>
-            <div id="base-3b" class="base"></div>
-            <div id="base-1b" class="base"></div>
-        </div>
-        <div id="field">
-            <div id="strikeout-overlay"><div id="strikeout-text">STRIKE OUT!</div></div>
-            <div id="homerun-overlay"><div id="homerun-text">HOME RUN!</div></div>
-            <div id="strike-zone"></div>
-            <div id="batter-box-left" class="batter-box"></div>
-            <div id="batter-box-right" class="batter-box"></div>
-            <div id="home-plate"></div>
-            <div id="baseball"></div>
-        </div>
-    </div>
-    <div class="controls">
-        <button id="pitch-button" style="display: none;">START PITCH</button>
-        <div id="pitching-controls">
-            <div id="pitching-prompt"></div>
-            <div id="pitch-type-buttons">
-                <div class="pitch-button-row">
-                    <button class="pitch-type-button" data-pitch-type="FOUR_SEAM">4-Seam</button>
-                    <button class="pitch-type-button" data-pitch-type="CURVEBALL">Curveball</button>
-                    <button class="pitch-type-button" data-pitch-type="SLIDER">Slider</button>
-                </div>
-                <div class="pitch-button-row">
-                    <button class="pitch-type-button" data-pitch-type="TWO_SEAM">2-Seam</button>
-                    <button class="pitch-type-button" data-pitch-type="SWEEPER">Sweeper</button>
-                    <button class="pitch-type-button" data-pitch-type="CHANGEUP">Changeup</button>
-                    <button class="pitch-type-button" data-pitch-type="FORKBALL">Forkball</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="bso-board">
-        <div id="batter-info"></div>
-        <div id="pitch-result">PLAY BALL!</div>
-        <div id="pitch-info"></div>
-        <div class="counts">
-            <div class="count-display"><span class="count-label">B</span><div class="dots" id="ball-dots"></div></div>
-            <div class="count-display"><span class="count-label">S</span><div class="dots" id="strike-dots"></div></div>
-            <div class="count-display"><span class="count-label">O</span><div class="dots" id="out-dots"></div></div>
-        </div>
-    </div>
-    <button id="cold-game-button">COLD</button>
-</div>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const elements = {
-            titleScreen: document.getElementById('title-screen'),
-            gameStartButton: document.getElementById('game-start-button'),
-            difficultyScreen: document.getElementById('difficulty-screen'),
-            difficultyButtons: document.querySelectorAll('.difficulty-button'),
-            inningSelectionScreen: document.getElementById('inning-selection-screen'),
-            inningButtons: document.querySelectorAll('.inning-button'),
-            playstyleSelectionScreen: document.getElementById('playstyle-selection-screen'),
-            playstyleButtons: document.querySelectorAll('.playstyle-button'),
-            tutorialButton: document.getElementById('tutorial-button'),
-            tutorialOverlay: document.getElementById('tutorial-overlay'),
-            tutorialMessage: document.getElementById('tutorial-message'),
-            tutorialNextButton: document.getElementById('tutorial-next-button'),
-            gameOverScreen: document.getElementById('game-over-screen'),
-            gameResultTitle: document.getElementById('game-result-title'),
-            finalScoreDisplay: document.getElementById('final-score-display'),
-            finalDifficultyDisplay: document.getElementById('final-difficulty-display'),
-            finalScoreboardContainer: document.getElementById('final-scoreboard-container'),
-            playAgainButton: document.getElementById('play-again-button'),
-            gameContainer: document.querySelector('.game-container'),
-            pitchButton: document.getElementById('pitch-button'), 
-            coldGameButton: document.getElementById('cold-game-button'),
-            turnOverlay: document.getElementById('turn-overlay'),
-            turnMessage: document.getElementById('turn-message'),
-            playballOverlay: document.getElementById('playball-overlay'),
-            initialPlayballButton: document.getElementById('initial-playball-button'),
-            ball: document.getElementById('baseball'),
-            strikeZone: document.getElementById('strike-zone'), 
-            field: document.getElementById('field'), 
-            scoreEffect: document.getElementById('score-effect'),
-            strikeoutOverlay: document.getElementById('strikeout-overlay'),
-            homerunOverlay: document.getElementById('homerun-overlay'),
-            pitchResult: document.getElementById('pitch-result'),
-            pitchInfo: document.getElementById('pitch-info'), 
-            batterInfo: document.getElementById('batter-info'),
-            ballDots: document.getElementById('ball-dots'),
-            strikeDots: document.getElementById('strike-dots'), 
-            outDots: document.getElementById('out-dots'),
-            fullScoreboard: document.getElementById('full-scoreboard'),
-            bases: [document.getElementById('base-1b'), document.getElementById('base-2b'), document.getElementById('base-3b')],
-            animationStyle: document.getElementById('pitch-animation-style'),
-            pitchingControls: document.getElementById('pitching-controls'),
-            pitchingPrompt: document.getElementById('pitching-prompt'),
-            pitchTypeButtons: document.getElementById('pitch-type-buttons')
-        };
-        
-        const createBatterStats = () => Array(9).fill(null).map(() => ({ atBats: 0, hits: 0 }));
-
-        const getInitialGameState = () => ({
-            isPitching: false, inning: 1, half: 'Top', 
-            bso: { b: 0, s: 0, o: 0 }, 
-            runners: [false, false, false], 
-            teams: { 
-                away: { name: 'AWAY', inningScores: Array(12).fill(null), R: 0, H: 0, E: 0, BB: 0 }, 
-                home: { name: 'HOME', inningScores: Array(12).fill(null), R: 0, H: 0, E: 0, BB: 0 } 
-            },
-            batterStats: {
-                away: createBatterStats(),
-                home: createBatterStats()
-            },
-            currentBatterIndex: {
-                away: 0,
-                home: 0
-            },
-            currentAtBatPitches: [],
-            regularInnings: 9, 
-            maxInnings: 12,
-            pitchingMode: 'manual'
-        });
-
-        let gameState = getInitialGameState();
-        let isGameActive = false;
-        let isTutorialActive = false;
-        let selectedPitchType = null;
-        let activeGhostBalls = [];
-
-        const BALL_DIAMETER = 4.5;
-        const FINAL_SCALE = 3.5;
-        const SOLID_CONTACT_THRESHOLD = 30;
-        const FOUL_THRESHOLD = 55;
-        const SWING_MISS_THRESHOLD = 150;
-        const STRIKEOUT_MSG_DURATION = 1500;
-        const GHOST_BALL_INTERVAL = 900;
-        const HOMERUN_EFFECT_DURATION = 2500;
-
-        const PITCH_TYPES = {
-            FOUR_SEAM:  { name: '4-Seam Fastball', speedRange: [152, 168] },
-            TWO_SEAM:   { name: '2-Seam Fastball', speedRange: [148, 160] },
-            SWEEPER:    { name: 'Sweeper',         speedRange: [125, 135] },
-            SLIDER:     { name: 'Slider',          speedRange: [135, 145] },
-            CHANGEUP:   { name: 'Changeup',        speedRange: [130, 140] },
-            FORKBALL:   { name: 'Forkball',        speedRange: [128, 138] },
-            CURVEBALL:  { name: 'Curveball',       speedRange: [115, 130] },
-        };
-        
-        const DIFFICULTY_SETTINGS = {
-            easy:    { speedModifier: -20, durationModifier: 1.5 },
-            normal:  { speedModifier: -10, durationModifier: 1.2 },
-            hard:    { speedModifier: 0,   durationModifier: 0.95 },
-            extreme: { speedModifier: 15,  durationModifier: 0.8 }
-        };
-        
-        const AI_DIFFICULTY_BATTING_SETTINGS = {
-            easy:    { swingChanceStrike: 0.75, swingChanceBall: 0.30, contactChance: 0.70, foulChance: 0.30, hitQualityModifier: -0.05, outChance: 0.65 },
-            normal:  { swingChanceStrike: 0.90, swingChanceBall: 0.15, contactChance: 0.90, foulChance: 0.22, hitQualityModifier: 0,      outChance: 0.60 },
-            hard:    { swingChanceStrike: 0.95, swingChanceBall: 0.08, contactChance: 0.95, foulChance: 0.18, hitQualityModifier: 0.10,  outChance: 0.52 },
-            extreme: { swingChanceStrike: 0.99, swingChanceBall: 0.03, contactChance: 0.98, foulChance: 0.15, hitQualityModifier: 0.20,  outChance: 0.45 }
-        };
-        
-        let currentDifficulty = 'normal';
-
-        function setDifficulty(level) {
-            currentDifficulty = level;
-        }
-        
-        function calculateAnimationDuration(speed) { 
-            const baseSpeed = 150; 
-            const baseDuration = 300 * DIFFICULTY_SETTINGS[currentDifficulty].durationModifier;
-            return Math.round(baseDuration * (baseSpeed / speed));
-        }
-
-        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-        function getQuadraticBezierPoint(t, p0, p1, p2) { const x = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x; const y = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y; return { x, y }; }
-        
-        function createPitchAnimation(target, pitchTypeInfo, speed) {
-            const startX = elements.ball.offsetLeft; const startY = elements.ball.offsetTop;
-            const endX = target.finalLeft; const endY = target.finalTop;
-            const p0 = { x: startX, y: startY }; const p2 = { x: endX, y: endY };
-            let p1; let breakX, breakY;
-            switch (pitchTypeInfo.name) {
-                case 'Curveball': breakX = (startX + endX) / 2 - 80; breakY = (startY + endY) / 2 - 120; break;
-                case 'Slider': breakX = (startX + endX) / 2 - 70; breakY = endY - 20; break;
-                case 'Sweeper': breakX = (startX + endX) / 2 - 100; breakY = endY - 15; break;
-                case 'Forkball': breakX = (startX + endX) / 2 + 25; breakY = (startY + endY) / 2 - 90; break;
-                case 'Changeup': breakX = (startX + endX) / 2 + 40; breakY = (startY + endY) / 2 - 70; break;
-                case '2-Seam Fastball': breakX = (startX + endX) / 2 + 40; breakY = (startY + endY) / 2 + 20; break;
-                default: breakX = (startX + endX) / 2; breakY = (startY + endY) / 2 - 30; break;
-            }
-            p1 = { x: breakX, y: breakY };
-            const duration = calculateAnimationDuration(speed);
-            let keyframes = `@keyframes pitch-move {`; const steps = 20;
-            for (let i = 0; i <= steps; i++) {
-                const t = i / steps; const point = getQuadraticBezierPoint(t, p0, p1, p2);
-                const scale = 1 + (FINAL_SCALE - 1) * t;
-                keyframes += `${t * 100}% { top: ${point.y}px; left: ${point.x}px; transform: scale(${scale}); }`;
-            }
-            keyframes += '}'; 
-            elements.animationStyle.innerHTML = keyframes;
-            return { p0, p1, p2, duration };
-        }
-        
-        function gaussianRandom(mean, stdDev) { let u = 0, v = 0; while (u === 0) u = Math.random(); while (v === 0) v = Math.random(); let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v); return num * stdDev + mean; }
-
-        function getStrikeZoneRect() {
-            const style = getComputedStyle(elements.strikeZone);
-            const rect = { left: parseFloat(style.left), top: parseFloat(style.top), width: parseFloat(style.width), height: parseFloat(style.height) };
-            rect.right = rect.left + rect.width; rect.bottom = rect.top + rect.height;
-            return rect;
-        }
-
-        function decideBattedBallResult(distanceFromCenter, aiSettings = null) {
-            const isAI = !!aiSettings;
-            const outChance = isAI ? aiSettings.outChance : 0.60;
-            const foulChance = isAI ? aiSettings.foulChance : 0.08;
-            let baseRand = Math.random() - (isAI ? aiSettings.hitQualityModifier : 0);
-            let penalty = distanceFromCenter / 100;
-            baseRand += penalty * 0.5;
-
-            if (baseRand < foulChance) return { type: 'FOUL' };
-            else if (baseRand < (foulChance + outChance)) {
-                const outRand = Math.random();
-                if (outRand < 0.45) return { type: 'OUT', subType: 'FLY' };
-                if (outRand < 0.80) return { type: 'OUT', subType: 'GROUND' };
-                return { type: 'OUT', subType: 'LINE' };
-            } else if (baseRand < 0.95) {
-                return { type: 'HIT', value: 1 };
-            } else if (baseRand < 0.99) {
-                return { type: 'HIT', value: 2 };
-            } else {
-                return { type: 'HIT', value: 4 };
-            }
-        }
-        
-        function decidePitchPath() {
-            const visualStrikeZoneRect = getStrikeZoneRect();
-            const szCenterX = visualStrikeZoneRect.left + visualStrikeZoneRect.width / 2;
-            const szCenterY = visualStrikeZoneRect.top + visualStrikeZoneRect.height / 2;
-            
-            const centerX = gaussianRandom(szCenterX, 40);
-            const centerY = gaussianRandom(szCenterY, 50);
-
-            const ballRadius = (BALL_DIAMETER * FINAL_SCALE) / 2;
-            const ballLeft = centerX - ballRadius;
-            const ballRight = centerX + ballRadius;
-            const ballTop = centerY - ballRadius;
-            const ballBottom = centerY + ballRadius;
-
-            const isStrikeLocation = !(ballRight < visualStrikeZoneRect.left || ballLeft > visualStrikeZoneRect.right || ballBottom < visualStrikeZoneRect.top || ballTop > visualStrikeZoneRect.bottom);
-            
-            const pitchKeys = Object.keys(PITCH_TYPES);
-            const randomPitchKey = pitchKeys[Math.floor(Math.random() * pitchKeys.length)];
-            const pitchTypeInfo = PITCH_TYPES[randomPitchKey];
-
-            const speed = getRandomInt(pitchTypeInfo.speedRange[0], pitchTypeInfo.speedRange[1]) + DIFFICULTY_SETTINGS[currentDifficulty].speedModifier;
-            
-            return { centerX, centerY, isStrikeLocation, pitchTypeInfo, speed };
-        }
-        
-        function createBattedBallAnimation(startPos, hitType) {
-            const p0 = { x: startPos.x, y: startPos.y };
-            let animName, p2;
-            const duration = 0.7;
-
-            const fieldWidth = elements.field.offsetWidth;
-            const randomExitX = (Math.random() - 0.5) * fieldWidth * 1.5 + fieldWidth / 2;
-            const finalBattedBallSize = (BALL_DIAMETER * FINAL_SCALE);
-
-            let keyframes = '';
-
-            switch(hitType) {
-                case 'fly': p2 = { x: randomExitX, y: -150 }; animName = 'batted-fly'; break;
-                case 'ground': p2 = { x: randomExitX, y: elements.field.offsetHeight + 50 }; animName = 'batted-ground'; break;
-                case 'foul': p2 = { x: p0.x + (Math.random() > 0.5 ? 150 : -150), y: -100 }; animName = 'batted-foul'; break;
-                default: p2 = { x: randomExitX, y: p0.y - 50 }; animName = 'batted-line'; break;
-            }
-            
-            if (hitType === 'ground') {
-                const bounceY = elements.field.offsetHeight - finalBattedBallSize;
-                const bounceX = p0.x + (randomExitX - p0.x) * 0.3;
-                const finalUpY = bounceY - 200;
-                keyframes = `@keyframes ${animName} { 0% { top: ${p0.y}px; left: ${p0.x}px; opacity: 1; transform: scale(${FINAL_SCALE}); } 17% { top: ${bounceY}px; left: ${bounceX}px; opacity: 0.9; transform: scale(${FINAL_SCALE * 0.9}); } 100% { top: ${finalUpY}px; left: ${randomExitX}px; opacity: 0; transform: scale(0.5); } }`;
-            } else {
-                keyframes = `@keyframes ${animName} { 0% { top: ${p0.y}px; left: ${p0.x}px; transform: scale(${FINAL_SCALE}); opacity: 1; } 100% { top: ${p2.y}px; left: ${p2.x}px; transform: scale(0.5); opacity: 0; } }`;
-            }
-            
-            elements.animationStyle.innerHTML += keyframes;
-            return { animName, duration };
-        }
-        
-        let swingListener = null;
-        let pitchTimeoutId = null;
-
-        function handlePlayerPitch(onCompletion) {
-            if (!isGameActive) return;
-            gameState.isPitching = true;
-            
-            resetBallPosition();
-            elements.strikeZone.style.opacity = '0';
-            elements.animationStyle.innerHTML = '';
-
-            setTimeout(() => {
-                if (!isGameActive) return;
-                const pitchData = decidePitchPath();
-                const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
-                
-                const { p0, p1, p2, duration } = createPitchAnimation(animationTarget, pitchData.pitchTypeInfo, pitchData.speed);
-                const pathPoints = { p0, p1, p2, duration };
-                
-                elements.ball.style.animation = `pitch-move ${duration / 1000}s linear forwards`;
-                
-                const pitchStartTime = Date.now();
-                const arrivalTime = pitchStartTime + duration;
-
-                const handleSwing = (e) => {
-                    elements.field.removeEventListener('click', swingListener);
-                    clearTimeout(pitchTimeoutId);
-
-                    const swingTime = Date.now();
-                    let result;
-                    
-                    if (swingTime < arrivalTime - SWING_MISS_THRESHOLD || swingTime > arrivalTime + SWING_MISS_THRESHOLD) {
-                        result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                    } else {
-                        const fieldRect = elements.field.getBoundingClientRect();
-                        const clickX = e.clientX - fieldRect.left;
-                        const clickY = e.clientY - fieldRect.top;
-                        const distance = Math.sqrt(Math.pow(clickX - pitchData.centerX, 2) + Math.pow(clickY - pitchData.centerY, 2));
-                        
-                        if (distance <= SOLID_CONTACT_THRESHOLD) {
-                            result = decideBattedBallResult(distance, null);
-                        } else if (distance <= FOUL_THRESHOLD) {
-                            result = { type: 'FOUL' };
-                        } else {
-                            result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                        }
-                    }
-
-                    const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-                    if (result.type !== 'STRIKE' && result.type !== 'BALL') {
-                         elements.strikeZone.classList.add('strike-hit');
-                         animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
-                             elements.strikeZone.classList.remove('strike-hit');
-                             if (onCompletion) onCompletion(outcome);
-                         });
-                    } else {
-                         if (onCompletion) onCompletion(outcome);
-                    }
-                };
-
-                swingListener = handleSwing;
-                elements.field.addEventListener('click', swingListener);
-                
-                pitchTimeoutId = setTimeout(() => {
-                    elements.field.removeEventListener('click', swingListener);
-                    
-                    if (!isGameActive) return;
-
-                    const result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED'};
-                    const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-                    if (onCompletion) onCompletion(outcome);
-                }, duration + 250);
-
-            }, 1000); 
-
-            setTimeout(() => {
-                if (!isGameActive) return;
-                elements.strikeZone.style.opacity = '1';
-            }, 1500);
-        }
-
-        function animateBattedBall(result, startPos, callback) {
-            let hitType = 'line';
-            if (result.type === 'HIT' && result.value === 4) {
-                hitType = 'fly';
-            } else if (result.type === 'OUT') {
-                hitType = result.subType.toLowerCase();
-            } else if (result.type === 'FOUL') {
-                hitType = 'foul';
-            }
-            
-            const battedAnim = createBattedBallAnimation(startPos, hitType);
-            elements.ball.style.animation = `${battedAnim.animName} ${battedAnim.duration}s ease-out forwards`;
-
-            setTimeout(callback, battedAnim.duration * 1000);
-        }
-        
-        function handlePitchResult(result, pitchTypeInfo, speed, pathPoints) {
-            if (!isGameActive && !isTutorialActive) return;
-            
-            let outcome = { didStrikeout: false, pitchCount: 0, didHomerun: false };
-
-            if(pathPoints) {
-                gameState.currentAtBatPitches.push({ ...pathPoints, type: result.type, subType: result.subType });
-            }
-
-            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
-            const currentTeam = gameState.teams[teamSide];
-            const batter = gameState.batterStats[teamSide][gameState.currentBatterIndex[teamSide]];
-
-            let displayText = '';
-            let isSacFly = false;
-
-            elements.pitchInfo.textContent = `${pitchTypeInfo.name} - ${Math.round(speed)} km/h`;
-
-            switch (result.type) {
-                case 'STRIKE':
-                    gameState.bso.s++;
-                    if (gameState.bso.s >= 3) {
-                        outcome.didStrikeout = true;
-                        outcome.pitchCount = gameState.currentAtBatPitches.length;
-
-                        displayText = 'STRIKEOUT!';
-                        
-                        const pitchesToReplay = [...gameState.currentAtBatPitches];
-                        
-                        elements.ball.style.opacity = '0';
-                        elements.strikeoutOverlay.classList.add('show-strikeout');
-                        
-                        setTimeout(() => {
-                           elements.strikeoutOverlay.classList.remove('show-strikeout');
-                           showStrikeoutGhostBallEffect(pitchesToReplay);
-                        }, STRIKEOUT_MSG_DURATION);
-
-                        gameState.bso.o++;
-                        batter.atBats++;
-                        resetBSCount();
-                        goToNextBatter();
-                    } else {
-                        displayText = result.subType === 'SWING_AND_MISS' ? 'SWING AND A MISS' : 'STRIKE!';
-                    }
-                    break;
-                case 'BALL':
-                    gameState.bso.b++;
-                    if (gameState.bso.b >= 4) {
-                        displayText = 'WALK';
-                        currentTeam.BB++;
-                        handleAdvancement({ bases: 1, isWalk: true });
-                        resetBSCount();
-                        goToNextBatter();
-                    } else {
-                        displayText = 'BALL';
-                    }
-                    break;
-                case 'FOUL':
-                    displayText = 'FOUL';
-                    if (gameState.bso.s < 2) {
-                        gameState.bso.s++;
-                    }
-                    break;
-                case 'OUT':
-                    const outsBeforePlay = gameState.bso.o;
-                    
-                    if (outsBeforePlay < 2 && result.subType === 'GROUND' && gameState.runners[0] && Math.random() < 0.55) {
-                        displayText = 'DOUBLE PLAY!';
-                        gameState.bso.o += 2;
-                        batter.atBats++;
-                        handleAdvancement({ groundOutType: 'doublePlay' });
-                    } else {
-                        gameState.bso.o++;
-                        
-                        if (gameState.bso.o >= 3) {
-                            batter.atBats++;
-                            displayText = result.subType === 'FLY' ? 'FLY OUT' : (result.subType === 'GROUND' ? 'GROUND OUT' : 'LINE DRIVE OUT');
-                        } else {
-                            if (result.subType === 'FLY') {
-                                if (gameState.runners[2] || gameState.runners[1]) {
-                                    displayText = 'SACRIFICE FLY';
-                                    isSacFly = true; 
-                                    handleAdvancement({ isSacFly: true });
-                                } else {
-                                    displayText = 'FLY OUT';
-                                }
-                            } else if (result.subType === 'GROUND') {
-                                if (gameState.runners[0]) {
-                                    displayText = "FIELDER'S CHOICE";
-                                    handleAdvancement({ groundOutType: 'fieldersChoice' });
-                                } else {
-                                    displayText = 'GROUND OUT';
-                                    handleAdvancement({ groundOutType: 'simple' });
-                                }
-                            } else {
-                                displayText = 'LINE DRIVE OUT';
-                            }
-                            if(!isSacFly) batter.atBats++;
-                        }
-                    }
-                    
-                    resetBSCount();
-                    goToNextBatter();
-                    break;
-                case 'HIT':
-                    currentTeam.H++;
-                    batter.atBats++;
-                    batter.hits++;
-                    if (result.value === 4) {
-                        displayText = 'HOME RUN!';
-                        outcome.didHomerun = true;
-                        showHomerunEffect();
-                    } else {
-                        displayText = result.value === 1 ? 'SINGLE!' : 'DOUBLE!';
-                    }
-                    handleAdvancement({ bases: result.value });
-                    resetBSCount();
-                    goToNextBatter();
-                    break;
-            }
-            
-            elements.pitchResult.textContent = displayText;
-            if (!isTutorialActive) updateUI();
-            
-            return outcome;
-        }
-
-        function showHomerunEffect() {
-            elements.homerunOverlay.classList.add('show-homerun');
-            setTimeout(() => {
-                elements.homerunOverlay.classList.remove('show-homerun');
-            }, HOMERUN_EFFECT_DURATION);
-        }
-
-        function showStrikeoutGhostBallEffect(pitches) {
-            if (!pitches || pitches.length === 0) return;
-
-            pitches.forEach((pitch, index) => {
-                setTimeout(() => {
-                    const ghostBall = document.createElement('div');
-                    ghostBall.className = 'ghost-ball';
-                    if (pitch.type === 'STRIKE' || pitch.type === 'FOUL') {
-                        ghostBall.classList.add('ghost-ball-strike');
-                    } else {
-                        ghostBall.classList.add('ghost-ball-ball');
-                    }
-                    
-                    const animName = `ghost-pitch-${index}`;
-                    const animDuration = pitch.duration;
-
-                    let keyframes = `@keyframes ${animName} { 0% { opacity: 0; transform: scale(1); }`;
-                    const steps = 20;
-                    for (let i = 1; i <= steps; i++) {
-                        const t = i / steps;
-                        const point = getQuadraticBezierPoint(t, pitch.p0, pitch.p1, pitch.p2);
-                        const scale = 1 + (FINAL_SCALE - 1) * t;
-                        keyframes += `${t * 100}% { 
-                            top: ${point.y}px; 
-                            left: ${point.x}px; 
-                            transform: scale(${scale});
-                            opacity: 0.9; 
-                        }`;
-                    }
-                    keyframes += `}`;
-                    elements.animationStyle.innerHTML += keyframes;
-                    
-                    ghostBall.style.top = `${pitch.p0.y}px`;
-                    ghostBall.style.left = `${pitch.p0.x}px`;
-                    ghostBall.style.transform = 'scale(1)';
-
-                    ghostBall.style.animation = `${animName} ${animDuration / 1000}s linear forwards`;
-                    elements.field.appendChild(ghostBall);
-                    
-                    activeGhostBalls.push(ghostBall);
-                }, index * GHOST_BALL_INTERVAL);
-            });
-        }
-        
-        function clearGhostBalls() {
-            activeGhostBalls.forEach(ball => ball.remove());
-            activeGhostBalls = [];
-        }
-
-        function goToNextBatter() {
-            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
-            gameState.currentBatterIndex[teamSide] = (gameState.currentBatterIndex[teamSide] + 1) % 9;
-            gameState.currentAtBatPitches = [];
-            updateBatterInfo();
-        }
-
-        function showTurnMessage(callback) {
-            const inning = gameState.inning;
-            const half = gameState.half === 'Top' ? '▲' : '▼';
-            elements.turnMessage.textContent = `${inning} ${half}`;
-
-            elements.turnOverlay.style.display = 'flex';
-            elements.turnOverlay.style.animation = 'none';
-            void elements.turnOverlay.offsetHeight; 
-            elements.turnOverlay.style.animation = 'fadeOverlay 1.5s forwards';
-
-            setTimeout(() => {
-                elements.turnOverlay.style.display = 'none';
-                setTimeout(() => { if (isGameActive) callback(); }, 500);
-            }, 1500);
-        }
-
-        function startGameTurn() {
-            if (!isGameActive) return;
-            updateBatterInfo(); 
-
-            showTurnMessage(() => {
-                if (gameState.half === 'Top') {
-                    elements.pitchButton.style.display = 'none';
-                    elements.pitchingControls.style.display = 'flex';
-                    if (gameState.pitchingMode === 'auto') {
-                        elements.pitchingPrompt.textContent = 'Simulating inning...';
-                        elements.pitchTypeButtons.style.display = 'none';
-                        autoPitchLoop();
-                    } else {
-                        elements.pitchingPrompt.textContent = '';
-                        elements.pitchTypeButtons.style.display = 'flex';
-                        prepareForManualPitch();
-                    }
-                } else { 
-                    elements.pitchingControls.style.display = 'none';
-                    elements.pitchButton.style.display = 'block';
-                    elements.pitchButton.disabled = false;
-                    gameState.isPitching = false;
-                    elements.pitchResult.textContent = 'Ready to bat!';
-                }
-            });
-        }
-        
-        function changeInning() {
-            if (!isGameActive) return;
-            clearGhostBalls();
-            const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
-            const currentInning = gameState.inning - 1;
-            if (gameState.teams[currentTeam].inningScores[currentInning] === null) {
-                gameState.teams[currentTeam].inningScores[currentInning] = 0;
-            }
-            
-            const homeScore = gameState.teams.home.R;
-            const awayScore = gameState.teams.away.R;
-
-            if (gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings) {
-                if (homeScore !== awayScore || gameState.inning >= gameState.maxInnings) {
-                    endGame();
-                    return;
-                }
-            }
-
-            gameState.bso = { b: 0, s: 0, o: 0 };
-            gameState.runners = [false, false, false];
-            gameState.currentAtBatPitches = [];
-            
-            if (gameState.half === 'Top') {
-                if (gameState.inning >= gameState.regularInnings && homeScore > awayScore) {
-                    endGame();
-                    return;
-                }
-                gameState.half = 'Bot';
-            } else {
-                gameState.half = 'Top';
-                gameState.inning++;
-            }
-            
-            updateUI();
-            
-            if (gameState.inning > gameState.maxInnings) {
-                endGame();
-                return;
-            }
-
-            setTimeout(() => {
-                if (isGameActive) startGameTurn();
-            }, 1500);
-        }
-        
-        function endGame(isColdGame = false) {
-            isGameActive = false;
-            elements.pitchButton.style.display = 'none'; 
-            elements.pitchingControls.style.display = 'none';
-            elements.coldGameButton.style.display = 'none';
-            elements.pitchButton.disabled = true;
-
-            const homeScore = gameState.teams.home.R; 
-            const awayScore = gameState.teams.away.R;
-            
-            let resultMessage = '';
-            let playerWon = false;
-            
-            elements.gameResultTitle.classList.remove('win', 'lose');
-
-            if (isColdGame) {
-                resultMessage = 'YOU LOSE!';
-                playerWon = false;
-                elements.gameResultTitle.classList.add('lose');
-            } else {
-                 if (homeScore > awayScore) {
-                    resultMessage = 'YOU WIN!';
-                    playerWon = true;
-                    elements.gameResultTitle.classList.add('win');
-                } else if (awayScore > homeScore) {
-                    resultMessage = 'YOU LOSE!';
-                    playerWon = false;
-                    elements.gameResultTitle.classList.add('lose');
-                } else {
-                    resultMessage = 'DRAW GAME!';
-                }
-            }
-            
-            elements.gameResultTitle.textContent = resultMessage;
-            elements.finalScoreDisplay.textContent = `AWAY ${awayScore} : ${homeScore} HOME`;
-            elements.finalDifficultyDisplay.textContent = `Difficulty: ${currentDifficulty}`;
-            
-            elements.finalScoreboardContainer.innerHTML = ''; 
-            const finalBoardWrapper = document.createElement('div');
-            const finalBoard = elements.fullScoreboard.cloneNode(true);
-            finalBoardWrapper.appendChild(finalBoard);
-
-            if (!isColdGame && homeScore !== awayScore) {
-                const homeTeamRow = finalBoard.querySelector(`.home-team-row .team-name`);
-                const awayTeamRow = finalBoard.querySelector(`.away-team-row .team-name`);
-                if(playerWon) {
-                    if(homeTeamRow) homeTeamRow.innerHTML += ' <span class="result-indicator result-win">WIN</span>';
-                    if(awayTeamRow) awayTeamRow.innerHTML += ' <span class="result-indicator result-lose">LOSE</span>';
-                } else {
-                    if(homeTeamRow) homeTeamRow.innerHTML += ' <span class="result-indicator result-lose">LOSE</span>';
-                    if(awayTeamRow) awayTeamRow.innerHTML += ' <span class="result-indicator result-win">WIN</span>';
-                }
-            }
-
-            elements.finalScoreboardContainer.appendChild(finalBoardWrapper);
-            elements.gameOverScreen.style.display = 'flex';
-        }
-
-        function resetGame() {
-            isGameActive = false;
-            clearGhostBalls();
-            
-            gameState = getInitialGameState();
-            
-            elements.gameOverScreen.style.display = 'none';
-            elements.titleScreen.style.display = 'flex';
-            elements.titleScreen.style.animation = 'none';
-            elements.difficultyScreen.style.display = 'none';
-            elements.inningSelectionScreen.style.display = 'none';
-            elements.playstyleSelectionScreen.style.display = 'none';
-            elements.gameContainer.style.display = 'none';
-            elements.playballOverlay.style.display = 'none';
-            
-            elements.pitchButton.style.display = 'none';
-            elements.pitchingControls.style.display = 'none';
-            elements.coldGameButton.style.display = 'none';
-            
-            elements.pitchResult.textContent = 'PLAY BALL!';
-            elements.pitchInfo.textContent = '';
-            elements.batterInfo.textContent = '';
-            
-            updateUI(); 
-        }
-
-        function showScoreEffect(runs) {
-            const effectEl = elements.scoreEffect;
-            effectEl.textContent = `+${runs} RUN${runs > 1 ? 'S' : ''}!`;
-
-            effectEl.classList.remove('score-anim');
-            void effectEl.offsetWidth; 
-            effectEl.classList.add('score-anim');
-        }
-        
-        function handleAdvancement({ bases = 0, isWalk = false, groundOutType = null, isSacFly = false }) {
-            if (!isGameActive && !isTutorialActive) return;
-
-            const currentTeam = gameState.half === 'Top' ? 'away' : 'home';
-            let runsScored = 0;
-            const originalRunners = [...gameState.runners];
-            const newRunners = [false, false, false];
-
-            if (isSacFly) {
-                if (originalRunners[2]) {
-                    runsScored++;
-                }
-                if (originalRunners[1]) {
-                    if (Math.random() < 0.3) newRunners[2] = true;
-                    else newRunners[1] = true;
-                }
-                if (originalRunners[0]) {
-                    if (Math.random() < 0.1) newRunners[1] = true;
-                    else newRunners[0] = true;
-                }
-            } else if (groundOutType) {
-                switch (groundOutType) {
-                    case 'simple':
-                        if (originalRunners[2]) runsScored++;
-                        if (originalRunners[1]) newRunners[2] = true;
-                        if (originalRunners[0]) newRunners[1] = true;
-                        break;
-                    case 'doublePlay':
-                        if (originalRunners[2]) newRunners[2] = true;
-                        break;
-                    case 'fieldersChoice':
-                        newRunners[0] = true;
-                        if (originalRunners[1]) newRunners[2] = true;
-                        if (originalRunners[2]) runsScored++;
-                        break;
-                }
-            } else if (isWalk) {
-                if (originalRunners[0] && originalRunners[1] && originalRunners[2]) runsScored++;
-                if (originalRunners[0] && originalRunners[1]) newRunners[2] = true;
-                if (originalRunners[0]) newRunners[1] = true;
-                if(originalRunners[2] && !newRunners[2]) newRunners[2] = true;
-                if(originalRunners[1] && !newRunners[1]) newRunners[1] = true;
-                newRunners[0] = true;
-            } else {
-                if (originalRunners[2]) runsScored++;
-                if (originalRunners[1]) {
-                    (2 + bases >= 4) ? runsScored++ : newRunners[1 + bases] = true;
-                }
-                if (originalRunners[0]) {
-                    (1 + bases >= 4) ? runsScored++ : newRunners[0 + bases] = true;
-                }
-                if (bases >= 4) { runsScored++; }
-                else if (bases > 0) { newRunners[bases - 1] = true; }
-            }
-
-            gameState.runners = newRunners;
-            if (runsScored > 0) {
-                gameState.teams[currentTeam].R += runsScored;
-                const currentInning = gameState.inning - 1;
-                if (gameState.teams[currentTeam].inningScores[currentInning] === null) {
-                    gameState.teams[currentTeam].inningScores[currentInning] = 0;
-                }
-                gameState.teams[currentTeam].inningScores[currentInning] += runsScored;
-                showScoreEffect(runsScored);
-            }
-            
-            if (isGameActive && gameState.half === 'Bot' && gameState.inning >= gameState.regularInnings && gameState.teams.home.R > gameState.teams.away.R) {
-                setTimeout(() => { if (isGameActive) endGame(); }, 500);
-            }
-        }
-        
-        function resetBSCount() { gameState.bso.b = 0; gameState.bso.s = 0; }
-        
-        function initBSODots() {
-            elements.ballDots.innerHTML = '';
-            elements.strikeDots.innerHTML = '';
-            elements.outDots.innerHTML = '';
-            for (let i = 0; i < 3; i++) elements.ballDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-b' }));
-            for (let i = 0; i < 2; i++) elements.strikeDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-s' }));
-            for (let i = 0; i < 3; i++) elements.outDots.appendChild(Object.assign(document.createElement('div'), { className: 'dot dot-o' }));
-        }
-
-        function updateBSODots() {
-            const { b, s, o } = gameState.bso;
-            Array.from(elements.ballDots.children).forEach((dot, i) => dot.classList.toggle('active', i < b));
-            Array.from(elements.strikeDots.children).forEach((dot, i) => dot.classList.toggle('active', i < s));
-            Array.from(elements.outDots.children).forEach((dot, i) => dot.classList.toggle('active', i < o));
-        }
-
-        function updateFullScoreboard() {
-            elements.fullScoreboard.innerHTML = ''; 
-            
-            const headerRow = document.createElement('div');
-            headerRow.className = 'scoreboard-row header-row';
-            
-            let gridTemplateColumns = `2.5fr repeat(${gameState.maxInnings}, 1fr) 1.2fr 0.9fr 0.9fr 0.9fr`;
-            let headerHTML = `<div class="cell team-name">TEAM</div>`;
-
-            for(let i = 1; i <= gameState.maxInnings; i++) {
-                const isExtra = i > gameState.regularInnings ? ' extra-inning' : '';
-                headerHTML += `<div class="cell inning-${i}${isExtra}">${i}</div>`;
-            }
-            headerHTML += `<div class="cell stat-r">R</div><div class="cell stat-h">H</div><div class="cell stat-e">E</div><div class="cell stat-b">B</div>`;
-            
-            headerRow.style.gridTemplateColumns = gridTemplateColumns;
-            headerRow.innerHTML = headerHTML;
-            elements.fullScoreboard.appendChild(headerRow);
-
-            ['away', 'home'].forEach(team => {
-                const teamState = gameState.teams[team];
-                const row = document.createElement('div');
-                row.className = `scoreboard-row ${team}-team-row`;
-                row.style.gridTemplateColumns = gridTemplateColumns;
-                if (team === 'home') row.id = 'home-row';
-
-                let html = `<div class="cell team-name">${teamState.name}</div>`;
-                for (let i = 0; i < gameState.maxInnings; i++) {
-                    const score = teamState.inningScores[i];
-                    let displayValue = '';
-                    const isCurrentInning = (i === gameState.inning - 1);
-                    const isBattingNow = (team === 'away' && gameState.half === 'Top') || (team === 'home' && gameState.half === 'Bot');
-                    
-                    if (score !== null) {
-                        displayValue = score;
-                    } else if (isGameActive && isCurrentInning && isBattingNow) {
-                        displayValue = gameState.teams[team].inningScores[i] || 0;
-                    }
-                    html += `<div class="cell inning-${i + 1}">${displayValue}</div>`;
-                }
-                html += `<div class="cell stat-r">${teamState.R}</div>`;
-                html += `<div class="cell stat-h">${teamState.H}</div>`;
-                html += `<div class="cell stat-e">${teamState.E}</div>`;
-                html += `<div class="cell stat-b">${teamState.BB}</div>`;
-                row.innerHTML = html;
-                elements.fullScoreboard.appendChild(row);
-            });
-        }
-        
-        function getOrdinal(n) {
-            const s = ["th", "st", "nd", "rd"];
-            const v = n % 100;
-            return n + (s[(v - 20) % 10] || s[v] || s[0]);
-        }
-        
-        function updateBatterInfo() {
-            if (!isGameActive) return;
-            const teamSide = gameState.half === 'Top' ? 'away' : 'home';
-            const batterIndex = gameState.currentBatterIndex[teamSide];
-            const batter = gameState.batterStats[teamSide][batterIndex];
-            const ordinal = getOrdinal(batterIndex + 1);
-            elements.batterInfo.textContent = `${ordinal} Batter (${batter.hits} / ${batter.atBats})`;
-        }
-
-        function resetBallPosition() {
-            clearGhostBalls();
-            elements.ball.style.animation = '';
-            elements.ball.style.top = `calc(20% - ${BALL_DIAMETER / 2}px)`;
-            elements.ball.style.left = `calc(50% - ${BALL_DIAMETER / 2}px)`;
-            elements.ball.style.transform = 'scale(1)';
-            elements.ball.style.opacity = '1';
-            elements.ball.offsetHeight;
-        }
-        function updateUI() { updateBSODots(); gameState.runners.forEach((hasRunner, i) => elements.bases[i].classList.toggle('runner-on', hasRunner)); updateFullScoreboard(); updateBatterInfo(); }
-        
-        function autoPitchLoop() {
-            if (!isGameActive || gameState.half !== 'Top' || gameState.isPitching) return;
-            
-            if (gameState.bso.o >= 3) {
-                setTimeout(() => { if (isGameActive) changeInning(); }, 1500);
-                return;
-            }
-            
-            gameState.isPitching = true;
-            resetBallPosition();
-            elements.strikeZone.style.opacity = '0';
-            elements.animationStyle.innerHTML = '';
-
-            setTimeout(() => { 
-                if (!isGameActive) { gameState.isPitching = false; return; }
-
-                const pitchData = decidePitchPath();
-                const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
-                const aiSettings = AI_DIFFICULTY_BATTING_SETTINGS[currentDifficulty];
-
-                const { p0, p1, p2, duration } = createPitchAnimation(animationTarget, pitchData.pitchTypeInfo, pitchData.speed);
-                const pathPoints = { p0, p1, p2, duration };
-
-                elements.ball.style.animation = `pitch-move ${duration / 1000}s linear forwards`;
-                
-                let wasHit = false;
-
-                setTimeout(() => { 
-                    if (!isGameActive) { gameState.isPitching = false; return; }
-                    
-                    let result;
-                    const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
-
-                    if (Math.random() < swingChance) {
-                        if (Math.random() < aiSettings.contactChance) {
-                            result = decideBattedBallResult(0, aiSettings);
-                            wasHit = (result.type !== 'FOUL');
-                        } else {
-                            result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                        }
-                    } else {
-                        result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
-                    }
-                    
-                    const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-
-                    const processNextAIStep = () => {
-                        gameState.isPitching = false;
-                        let delay = 1200;
-                        if(outcome.didStrikeout) {
-                            delay = STRIKEOUT_MSG_DURATION + ((outcome.pitchCount - 1) * GHOST_BALL_INTERVAL) + 800;
-                        } else if (outcome.didHomerun) {
-                            delay = HOMERUN_EFFECT_DURATION;
-                        }
-                        setTimeout(() => {
-                           autoPitchLoop();
-                        }, delay);
-                    };
-
-                    if (wasHit || result.type === 'FOUL') {
-                        elements.strikeZone.classList.add('strike-hit');
-                        animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
-                            elements.strikeZone.classList.remove('strike-hit');
-                            processNextAIStep();
-                        });
-                    } else {
-                        processNextAIStep();
-                    }
-
-                }, duration + 250);
-
-                 setTimeout(() => {
-                    if (!isGameActive) return;
-                    elements.strikeZone.style.opacity = '1';
-                }, duration + 500);
-
-            }, 600);
-        }
-
-        function prepareForManualPitch() {
-            if (gameState.bso.o >= 3) {
-                 setTimeout(() => { if(isGameActive) changeInning() }, 1500);
-                 return;
-            }
-            
-            resetBallPosition();
-            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = false);
-            
-            gameState.isPitching = false;
-            selectedPitchType = null;
-            elements.pitchingPrompt.textContent = 'Select a pitch type.';
-            elements.strikeZone.style.opacity = '1';
-        }
-
-        function handlePlayerPitching(targetX, targetY) {
-            if (!isGameActive || !selectedPitchType || gameState.isPitching) return;
-            gameState.isPitching = true;
-            
-            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(btn => btn.disabled = true);
-            elements.pitchingPrompt.textContent = '';
-            
-            resetBallPosition();
-            elements.strikeZone.style.opacity = '0'; 
-            elements.animationStyle.innerHTML = '';
-
-            const maxOffset = 25;
-            const offsetX = (Math.random() - 0.5) * 2 * maxOffset;
-            const offsetY = (Math.random() - 0.5) * 2 * maxOffset;
-            const finalX = targetX + offsetX;
-            const finalY = targetY + offsetY;
-
-            const pitchTypeInfo = PITCH_TYPES[selectedPitchType];
-            const speed = getRandomInt(pitchTypeInfo.speedRange[0], pitchTypeInfo.speedRange[1]) + DIFFICULTY_SETTINGS[currentDifficulty].speedModifier;
-            const animationTarget = { finalLeft: finalX - (BALL_DIAMETER / 2), finalTop: finalY - (BALL_DIAMETER / 2) };
-
-            const { p0, p1, p2, duration } = createPitchAnimation(animationTarget, pitchTypeInfo, speed);
-            const pathPoints = { p0, p1, p2, duration };
-            
-            elements.ball.style.animation = `pitch-move ${duration / 1000}s linear forwards`;
-            
-            const szRect = getStrikeZoneRect();
-            const ballRadius = (BALL_DIAMETER * FINAL_SCALE) / 2;
-            const isStrikeLocation = !( (finalX + ballRadius) < szRect.left || (finalX - ballRadius) > szRect.right || (finalY + ballRadius) < szRect.top || (finalY - ballRadius) > szRect.bottom );
-
-            const pitchData = { centerX: finalX, centerY: finalY, isStrikeLocation, pitchTypeInfo, speed };
-            
-            setTimeout(() => {
-                aiBatterSwingLogic(pitchData, pathPoints);
-            }, duration + 250);
-        }
-
-        function aiBatterSwingLogic(pitchData, pathPoints) {
-            let result;
-            const aiSettings = AI_DIFFICULTY_BATTING_SETTINGS[currentDifficulty];
-            const swingChance = pitchData.isStrikeLocation ? aiSettings.swingChanceStrike : aiSettings.swingChanceBall;
-
-            const processNextStep = (outcome) => {
-                if (!isGameActive) return;
-                
-                let delay = 1500;
-                if(outcome.didStrikeout) {
-                    delay = STRIKEOUT_MSG_DURATION + ((outcome.pitchCount - 1) * GHOST_BALL_INTERVAL) + 800;
-                } else if (outcome.didHomerun) {
-                    delay = HOMERUN_EFFECT_DURATION;
-                }
-
-                setTimeout(() => {
-                    if(isGameActive) {
-                        if (gameState.bso.o >= 3) {
-                            changeInning();
-                        } else {
-                            prepareForManualPitch();
-                        }
-                    }
-                }, delay);
-            };
-            
-            if (Math.random() < swingChance) {
-                if (Math.random() < aiSettings.contactChance) {
-                    result = decideBattedBallResult(0, aiSettings);
-                    const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-                    elements.strikeZone.classList.add('strike-hit');
-                    animateBattedBall(result, { x: pitchData.centerX, y: pitchData.centerY }, () => {
-                        elements.strikeZone.classList.remove('strike-hit');
-                        processNextStep(outcome);
-                    });
-                } else {
-                    result = { type: 'STRIKE', subType: 'SWING_AND_MISS' };
-                    const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-                    processNextStep(outcome);
-                }
-            } else {
-                result = { type: pitchData.isStrikeLocation ? 'STRIKE' : 'BALL', subType: 'CALLED' };
-                const outcome = handlePitchResult(result, pitchData.pitchTypeInfo, pitchData.speed, pathPoints);
-                processNextStep(outcome);
-            }
-        }
-        
-        function prepareForNextPitch(outcome) {
-            if (!isGameActive) return;
-
-            let delay = 1200;
-            if(outcome.didStrikeout) {
-                delay = STRIKEOUT_MSG_DURATION + ((outcome.pitchCount - 1) * GHOST_BALL_INTERVAL) + 800;
-            } else if (outcome.didHomerun) {
-                delay = HOMERUN_EFFECT_DURATION;
-            }
-
-            setTimeout(() => {
-                if (!isGameActive) return;
-
-                gameState.isPitching = false;
-                if (gameState.bso.o >= 3) {
-                    changeInning();
-                } else {
-                    updateBatterInfo();
-                    elements.pitchResult.textContent = 'Ready to bat!';
-                    elements.pitchButton.disabled = false;
-                }
-            }, delay);
-        }
-
-        function init() { 
-            initBSODots(); 
-            
-            elements.gameStartButton.addEventListener('click', () => {
-                elements.titleScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                setTimeout(() => {
-                    elements.titleScreen.style.display = 'none';
-                    elements.titleScreen.style.animation = '';
-                    elements.difficultyScreen.style.display = 'flex';
-                }, 500);
-            });
-
-            elements.difficultyButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    setDifficulty(button.dataset.difficulty);
-                    elements.difficultyScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                    setTimeout(() => {
-                        elements.difficultyScreen.style.display = 'none';
-                        elements.difficultyScreen.style.animation = '';
-                        elements.inningSelectionScreen.style.display = 'flex';
-                    }, 500);
-                });
-            });
-
-            elements.inningButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const innings = parseInt(button.dataset.innings, 10);
-                    gameState.regularInnings = innings;
-                    switch(innings) {
-                        case 3: gameState.maxInnings = 5; break;
-                        case 6: gameState.maxInnings = 9; break;
-                        case 9: gameState.maxInnings = 12; break;
-                    }
-                    gameState.teams.away.inningScores = Array(gameState.maxInnings).fill(null);
-                    gameState.teams.home.inningScores = Array(gameState.maxInnings).fill(null);
-
-                    elements.inningSelectionScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                    setTimeout(() => {
-                        elements.inningSelectionScreen.style.display = 'none';
-                        elements.inningSelectionScreen.style.animation = '';
-                        elements.playstyleSelectionScreen.style.display = 'flex';
-                    }, 500);
-                });
-            });
-            
-            elements.playstyleButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    gameState.pitchingMode = button.dataset.style;
-                    elements.playstyleSelectionScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                     setTimeout(() => {
-                        elements.playstyleSelectionScreen.style.display = 'none';
-                        elements.playstyleSelectionScreen.style.animation = '';
-                        elements.gameContainer.style.display = 'block';
-                        elements.playballOverlay.style.display = 'flex';
-                        isGameActive = true;
-                        updateUI();
-                    }, 500);
-                });
-            });
-
-            elements.initialPlayballButton.addEventListener('click', () => {
-                if (isGameActive) {
-                    elements.playballOverlay.style.animation = 'fadeOutScreen 0.5s forwards';
-                    setTimeout(() => {
-                        elements.playballOverlay.style.display = 'none';
-                        elements.playballOverlay.style.animation = '';
-                        elements.coldGameButton.style.display = 'block';
-                        startGameTurn();
-                    }, 500);
-                }
-            });
-            
-            elements.pitchButton.addEventListener('click', () => {
-                if (isGameActive && gameState.half === 'Bot' && !gameState.isPitching) {
-                    elements.pitchButton.disabled = true;
-                    handlePlayerPitch((outcome) => {
-                        prepareForNextPitch(outcome);
-                    });
-                }
-            });
-            
-            Array.from(elements.pitchTypeButtons.getElementsByTagName('button')).forEach(button => {
-                button.addEventListener('click', () => {
-                    if (gameState.isPitching) return;
-                    selectedPitchType = button.dataset.pitchType;
-                    elements.pitchingPrompt.textContent = 'Click on the field to choose a location.';
-                });
-            });
-            
-            elements.field.addEventListener('click', (e) => {
-                if(isGameActive && !isTutorialActive && gameState.half === 'Top' && selectedPitchType && !gameState.isPitching) {
-                    const fieldRect = elements.field.getBoundingClientRect();
-                    const targetX = e.clientX - fieldRect.left;
-                    const targetY = e.clientY - fieldRect.top;
-                    handlePlayerPitching(targetX, targetY);
-                }
-            });
-            
-            elements.coldGameButton.addEventListener('click', () => {
-                if (isGameActive) {
-                    if (confirm("정말로 콜드게임을 선언하시겠습니까?\n즉시 패배로 처리됩니다.")) {
-                        endGame(true);
-                    }
-                }
-            });
-            
-            elements.playAgainButton.addEventListener('click', resetGame);
-            
-            elements.tutorialButton.addEventListener('click', () => {
-                elements.difficultyScreen.style.animation = 'fadeOutScreen 0.5s forwards';
-                setTimeout(() => {
-                    elements.difficultyScreen.style.display = 'none';
-                    elements.difficultyScreen.style.animation = '';
-                    startTutorial();
-                }, 500);
-            });
-            
-            updateUI();
-        }
-        init();
-
-        // --- 튜토리얼 관련 함수 ---
-        let tutorialPitchCount = 0;
-        const totalTutorialPitches = 5;
-        const tutorialMessages = [
-            "Welcome to the Batting Tutorial!\nLet's learn how to hit.",
-            "A pitch will be thrown from the center.\nYour goal is to click the ball right as it enters the strike zone (the dotted box).",
-            `You will get ${totalTutorialPitches} practice pitches.\nLet's start!`,
-            "Great! Let's try again.",
-            "Tutorial complete!\nYou're ready for a real game."
-        ];
-
-        function startTutorial() {
-            isTutorialActive = true;
-            elements.gameContainer.style.display = 'block';
-            elements.gameContainer.classList.add('tutorial-mode');
-            elements.tutorialOverlay.style.display = 'flex';
-            tutorialPitchCount = 0;
-            currentTutorialStep = 0;
-            showTutorialStep(currentTutorialStep);
-        }
-
-        function showTutorialStep(stepIndex) {
-            elements.tutorialMessage.textContent = tutorialMessages[stepIndex];
-            elements.tutorialNextButton.textContent = "NEXT";
-            
-            if (stepIndex === 2) { 
-                elements.tutorialNextButton.textContent = "START BATTING PRACTICE";
-            } else if (stepIndex >= tutorialMessages.length -1) { 
-                elements.tutorialNextButton.textContent = "FINISH";
-            }
-        }
-
-        elements.tutorialNextButton.addEventListener('click', () => {
-            currentTutorialStep++;
-
-            if (currentTutorialStep === tutorialMessages.length - 2) { 
-                 elements.tutorialOverlay.style.display = 'none';
-                 runTutorialPitch();
-            } else if (currentTutorialStep >= tutorialMessages.length) { 
-                endTutorial();
-            } else {
-                showTutorialStep(currentTutorialStep);
-            }
-        });
-
-        function runTutorialPitch() {
-            if (tutorialPitchCount >= totalTutorialPitches) {
-                elements.tutorialOverlay.style.display = 'flex';
-                showTutorialStep(tutorialMessages.length - 1);
-                return;
-            }
-            tutorialPitchCount++;
-            elements.pitchResult.textContent = `PRACTICE SWING: ${tutorialPitchCount} / ${totalTutorialPitches}`;
-            
-            resetBallPosition();
-            elements.animationStyle.innerHTML = ''; 
-            const szRect = getStrikeZoneRect();
-            const targetX = szRect.left + szRect.width / 2;
-            const targetY = szRect.top + szRect.height / 2;
-            
-            const pitchData = {
-                centerX: targetX,
-                centerY: targetY,
-                pitchTypeInfo: PITCH_TYPES.FOUR_SEAM,
-                speed: 90 
-            };
-
-            const animationTarget = { finalLeft: pitchData.centerX - (BALL_DIAMETER / 2), finalTop: pitchData.centerY - (BALL_DIAMETER / 2) };
-            
-            const { duration } = createPitchAnimation(animationTarget, pitchData.pitchTypeInfo, pitchData.speed);
-            elements.ball.style.animation = `pitch-move ${duration / 1000}s linear forwards`;
-            
-            const tutorialSwingHandler = () => {
-                elements.field.removeEventListener('click', tutorialSwingHandler);
-                animateBattedBall({type:'HIT', value: 1}, {x: pitchData.centerX, y: pitchData.centerY}, () => {
-                    setTimeout(runTutorialPitch, 1000); 
-                });
-            };
-            elements.field.addEventListener('click', tutorialSwingHandler);
-        }
-
-        function endTutorial() {
-            isTutorialActive = false;
-            elements.gameContainer.style.display = 'none';
-            elements.gameContainer.classList.remove('tutorial-mode');
-            elements.tutorialOverlay.style.display = 'none';
-            resetGame();
-        }
-    });
-
-    // --- PWA 서비스 워커 등록 코드 ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js')
-                .then((registration) => {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                }, (err) => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-        });
-    }
-</script>
-</body>
-</html>
+body {
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    background-color: #dcdcdc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+.game-container {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border: 1px solid #333;
+    text-align: center;
+    width: 95%;
+    max-width: 600px;
+}
+#full-scoreboard {
+    display: grid;
+    grid-template-rows: auto auto auto;
+    border: 1px solid #333;
+    margin-bottom: 10px;
+}
+.scoreboard-row {
+    display: grid;
+    grid-template-columns: 4fr repeat(12, 1fr) 2fr 2fr 2fr 2fr;
+}
+.header-row {
+    font-weight: bold;
+    background-color: #333;
+    color: #fff;
+}
+.cell {
+    padding: 4px 2px;
+    border-left: 1px solid #ccc;
+    border-top: 1px solid #ccc;
+    font-size: 0.8rem;
+    text-align: center;
+}
+.team-name {
+    font-weight: bold;
+    border-left: none;
+}
+.stat-r, .stat-h, .stat-e, .stat-b {
+    font-weight: bold;
+    background-color: #e0e0e0;
+}
+#home-row .cell {
+    border-bottom: 1px solid #333;
+}
+#field-container {
+    position: relative;
+}
+#bases-diagram {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 60px;
+    height: 60px;
+    z-index: 10;
+}
+.base {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background-color: transparent;
+    border: 2px solid #bbb;
+    transform: rotate(45deg);
+    transition: all 0.3s;
+}
+#base-2b {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+}
+#base-1b {
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%) rotate(45deg);
+}
+#base-3b {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) rotate(45deg);
+}
+.base.runner-on {
+    background-color: #fff;
+    border-color: #000;
+}
+#field {
+    width: 100%;
+    height: 350px;
+    background-color: #4a4a4a;
+    border: 3px solid #1a1a1a;
+    position: relative;
+    overflow: hidden;
+    perspective: 500px;
+}
+#strike-zone {
+    position: absolute;
+    width: 100px;
+    height: 120px;
+    border: 2px dashed rgba(255, 255, 255, 0.8);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+#strike-zone.strike-hit {
+    border-color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+#home-plate {
+    position: absolute;
+    width: 82px;
+    height: 82px;
+    background-color: #e0e0e0;
+    border: 1px solid #333;
+    bottom: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%);
+}
+/* --- [핵심 수정] 공 크기 1.5배 증가 --- */
+#baseball {
+    position: absolute;
+    width: 4.5px; /* 3px -> 4.5px */
+    height: 4.5px; /* 3px -> 4.5px */
+    background: #fff;
+    border-radius: 50%;
+    border: 1px solid #000;
+    box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+    top: 20%;
+    left: calc(50% - 2.25px); /* 너비에 맞게 중앙 위치 조정 */
+    transform: scale(1);
+}
+#pitch-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+.pitch-marker {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: fadeOut 1.5s forwards;
+}
+.pitch-marker.strike {
+    background-color: #4a90e2;
+    border: 1px solid #fff;
+}
+.pitch-marker.ball {
+    background-color: #888;
+    border: 1px solid #fff;
+}
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+.controls {
+    margin-top: 15px;
+}
+#pitch-button {
+    padding: 12px 30px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    background-color: #000;
+    border: 2px solid #000;
+    border-radius: 0;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+#pitch-button:hover:not(:disabled) {
+    background-color: #fff;
+    color: #000;
+}
+#pitch-button:disabled {
+    background-color: #888;
+    border-color: #888;
+    color: #ccc;
+    cursor: not-allowed;
+}
+.bso-board {
+    background-color: #e9e9e9;
+    padding: 10px;
+    border: 1px solid #aaa;
+    margin-top: 10px;
+}
+#pitch-result {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+    height: 30px;
+    color: #000;
+}
+#pitch-info {
+    font-size: 0.9rem;
+    color: #555;
+    height: 20px;
+    margin-bottom: 10px;
+}
+.counts {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+.count-display {
+    display: flex;
+    align-items: center;
+}
+.count-label {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-right: 8px;
+}
+.dots {
+    display: flex;
+    gap: 5px;
+}
+.dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #ccc;
+    transition: background-color 0.3s;
+}
+.dot-b.active { background-color: #a3d900; }
+.dot-s.active { background-color: #f7ce00; }
+.dot-o.active { background-color: #e53935; }
