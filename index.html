@@ -1,8 +1,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 화면 확대 방지 및 모바일 최적화 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dynamic Baseball Simulator</title>
+    
+    <!-- PWA 관련 설정 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+
     <style>
         :root {
             --sz-width: 100px;
@@ -19,6 +26,7 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            touch-action: none; /* 모바일 새로고침 스와이프 방지 */
         }
         #title-screen, #difficulty-screen, #game-over-screen, #playball-overlay, #inning-selection-screen, #playstyle-selection-screen {
             position: absolute;
@@ -849,7 +857,6 @@
                 const arrivalTime = pitchStartTime + duration;
 
                 const handleSwing = (e) => {
-                    // BUGFIX: Immediately remove listener to prevent multiple swings
                     elements.field.removeEventListener('click', swingListener);
                     clearTimeout(pitchTimeoutId);
 
@@ -1870,6 +1877,18 @@
             resetGame();
         }
     });
+
+    // --- PWA 서비스 워커 등록 코드 ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then((registration) => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, (err) => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+        });
+    }
 </script>
 </body>
 </html>
